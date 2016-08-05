@@ -917,6 +917,13 @@
       <arg name="height" type="int"/>
     </request>
 
+    <request name="set_overlay_priority">
+      <description summary="set the new window geometry">
+        Change tcc specific hw overlay order.
+      </description>
+      <arg name="ovp_order" type="uint"/>
+    </request>
+
     <request name="set_maximized">
       <description summary="make the surface a maximized surface">
 	Map the surface as a maximized surface.
