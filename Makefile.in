@@ -81,18 +81,30 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@ENABLE_SCANNER_TRUE@bin_PROGRAMS = wayland-scanner$(EXEEXT)
-@ENABLE_SCANNER_TRUE@am__append_1 = src/wayland-scanner.pc
-TESTS = array-test$(EXEEXT) client-test$(EXEEXT) display-test$(EXEEXT) \
-	connection-test$(EXEEXT) event-loop-test$(EXEEXT) \
-	fixed-test$(EXEEXT) list-test$(EXEEXT) map-test$(EXEEXT) \
-	os-wrappers-test$(EXEEXT) sanity-test$(EXEEXT) \
-	socket-test$(EXEEXT) queue-test$(EXEEXT) signal-test$(EXEEXT) \
-	resources-test$(EXEEXT) message-test$(EXEEXT) \
-	headers-test$(EXEEXT) $(am__EXEEXT_1)
-@ENABLE_CPP_TEST_TRUE@am__append_2 = cpp-compile-test
-check_PROGRAMS = $(am__EXEEXT_2) exec-fd-leak-checker$(EXEEXT)
-noinst_PROGRAMS = fixed-benchmark$(EXEEXT)
+bin_PROGRAMS = wayland-scanner$(EXEEXT)
+@ENABLE_LIBRARIES_TRUE@am__append_1 = libwayland-private.la
+@ENABLE_LIBRARIES_TRUE@am__append_2 = src/wayland-client.pc \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-server.pc \
+@ENABLE_LIBRARIES_TRUE@	cursor/wayland-cursor.pc
+@ENABLE_LIBRARIES_TRUE@TESTS = array-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	client-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	display-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	connection-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	event-loop-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	fixed-test$(EXEEXT) list-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	map-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	os-wrappers-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	sanity-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	socket-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	queue-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	signal-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	resources-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	message-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	headers-test$(EXEEXT) $(am__EXEEXT_1)
+@ENABLE_CPP_TEST_TRUE@@ENABLE_LIBRARIES_TRUE@am__append_3 = cpp-compile-test
+@ENABLE_LIBRARIES_TRUE@check_PROGRAMS = $(am__EXEEXT_2) \
+@ENABLE_LIBRARIES_TRUE@	exec-fd-leak-checker$(EXEEXT)
+@ENABLE_LIBRARIES_TRUE@noinst_PROGRAMS = fixed-benchmark$(EXEEXT)
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -106,9 +118,9 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/src/wayland-client.pc.in \
 	$(top_srcdir)/src/wayland-scanner.pc.in \
 	$(top_srcdir)/src/wayland-version.h.in depcomp \
-	$(dist_aclocal_DATA) $(dist_pkgdata_DATA) $(include_HEADERS) \
-	test-driver COPYING README TODO compile config.guess \
-	config.sub install-sh missing ltmain.sh
+	$(dist_aclocal_DATA) $(dist_pkgdata_DATA) \
+	$(am__include_HEADERS_DIST) test-driver COPYING README TODO \
+	compile config.guess config.sub install-sh missing ltmain.sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -161,136 +173,218 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libtest_runner_la_DEPENDENCIES = libwayland-util.la \
-	libwayland-client.la libwayland-server.la \
-	$(am__DEPENDENCIES_1)
+@ENABLE_LIBRARIES_TRUE@libtest_runner_la_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libwayland-private.la \
+@ENABLE_LIBRARIES_TRUE@	libwayland-util.la libwayland-client.la \
+@ENABLE_LIBRARIES_TRUE@	libwayland-server.la \
+@ENABLE_LIBRARIES_TRUE@	$(am__DEPENDENCIES_1)
+am__libtest_runner_la_SOURCES_DIST = tests/test-runner.c \
+	tests/test-runner.h tests/test-helpers.c \
+	tests/test-compositor.h tests/test-compositor.c
 am__dirstamp = $(am__leading_dot)dirstamp
-am_libtest_runner_la_OBJECTS = tests/test-runner.lo \
-	tests/test-helpers.lo tests/test-compositor.lo
+@ENABLE_LIBRARIES_TRUE@am_libtest_runner_la_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/test-runner.lo \
+@ENABLE_LIBRARIES_TRUE@	tests/test-helpers.lo \
+@ENABLE_LIBRARIES_TRUE@	tests/test-compositor.lo
 libtest_runner_la_OBJECTS = $(am_libtest_runner_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libwayland_client_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	libwayland-util.la
-am_libwayland_client_la_OBJECTS =  \
-	src/libwayland_client_la-wayland-client.lo
-nodist_libwayland_client_la_OBJECTS =  \
-	protocol/libwayland_client_la-wayland-protocol.lo
+@ENABLE_LIBRARIES_TRUE@am_libtest_runner_la_rpath =
+@ENABLE_LIBRARIES_TRUE@libwayland_client_la_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	$(am__DEPENDENCIES_1) \
+@ENABLE_LIBRARIES_TRUE@	libwayland-private.la \
+@ENABLE_LIBRARIES_TRUE@	libwayland-util.la
+am__libwayland_client_la_SOURCES_DIST = src/wayland-client.c
+@ENABLE_LIBRARIES_TRUE@am_libwayland_client_la_OBJECTS = src/libwayland_client_la-wayland-client.lo
+@ENABLE_LIBRARIES_TRUE@nodist_libwayland_client_la_OBJECTS = protocol/libwayland_client_la-wayland-protocol.lo
 libwayland_client_la_OBJECTS = $(am_libwayland_client_la_OBJECTS) \
 	$(nodist_libwayland_client_la_OBJECTS)
 libwayland_client_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libwayland_client_la_CFLAGS) $(CFLAGS) \
 	$(libwayland_client_la_LDFLAGS) $(LDFLAGS) -o $@
-libwayland_cursor_la_DEPENDENCIES = libwayland-client.la
-am_libwayland_cursor_la_OBJECTS =  \
-	cursor/libwayland_cursor_la-wayland-cursor.lo \
-	cursor/libwayland_cursor_la-os-compatibility.lo \
-	cursor/libwayland_cursor_la-xcursor.lo
+@ENABLE_LIBRARIES_TRUE@am_libwayland_client_la_rpath = -rpath \
+@ENABLE_LIBRARIES_TRUE@	$(libdir)
+@ENABLE_LIBRARIES_TRUE@libwayland_cursor_la_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libwayland-client.la
+am__libwayland_cursor_la_SOURCES_DIST = cursor/wayland-cursor.c \
+	cursor/os-compatibility.c cursor/os-compatibility.h \
+	cursor/cursor-data.h cursor/xcursor.c cursor/xcursor.h
+@ENABLE_LIBRARIES_TRUE@am_libwayland_cursor_la_OBJECTS = cursor/libwayland_cursor_la-wayland-cursor.lo \
+@ENABLE_LIBRARIES_TRUE@	cursor/libwayland_cursor_la-os-compatibility.lo \
+@ENABLE_LIBRARIES_TRUE@	cursor/libwayland_cursor_la-xcursor.lo
 libwayland_cursor_la_OBJECTS = $(am_libwayland_cursor_la_OBJECTS)
 libwayland_cursor_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libwayland_cursor_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libwayland_server_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	libwayland-util.la
-am_libwayland_server_la_OBJECTS =  \
-	src/libwayland_server_la-wayland-server.lo \
-	src/libwayland_server_la-wayland-shm.lo \
-	src/libwayland_server_la-event-loop.lo
-nodist_libwayland_server_la_OBJECTS =  \
-	protocol/libwayland_server_la-wayland-protocol.lo
+@ENABLE_LIBRARIES_TRUE@am_libwayland_cursor_la_rpath = -rpath \
+@ENABLE_LIBRARIES_TRUE@	$(libdir)
+libwayland_private_la_LIBADD =
+am__libwayland_private_la_SOURCES_DIST = src/connection.c \
+	src/wayland-os.c src/wayland-os.h src/wayland-private.h
+@ENABLE_LIBRARIES_TRUE@am_libwayland_private_la_OBJECTS = src/libwayland_private_la-connection.lo \
+@ENABLE_LIBRARIES_TRUE@	src/libwayland_private_la-wayland-os.lo
+libwayland_private_la_OBJECTS = $(am_libwayland_private_la_OBJECTS)
+libwayland_private_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libwayland_private_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@ENABLE_LIBRARIES_TRUE@am_libwayland_private_la_rpath =
+@ENABLE_LIBRARIES_TRUE@libwayland_server_la_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	$(am__DEPENDENCIES_1) \
+@ENABLE_LIBRARIES_TRUE@	libwayland-private.la \
+@ENABLE_LIBRARIES_TRUE@	libwayland-util.la
+am__libwayland_server_la_SOURCES_DIST = src/wayland-server.c \
+	src/wayland-shm.c src/event-loop.c
+@ENABLE_LIBRARIES_TRUE@am_libwayland_server_la_OBJECTS = src/libwayland_server_la-wayland-server.lo \
+@ENABLE_LIBRARIES_TRUE@	src/libwayland_server_la-wayland-shm.lo \
+@ENABLE_LIBRARIES_TRUE@	src/libwayland_server_la-event-loop.lo
+@ENABLE_LIBRARIES_TRUE@nodist_libwayland_server_la_OBJECTS = protocol/libwayland_server_la-wayland-protocol.lo
 libwayland_server_la_OBJECTS = $(am_libwayland_server_la_OBJECTS) \
 	$(nodist_libwayland_server_la_OBJECTS)
 libwayland_server_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libwayland_server_la_CFLAGS) $(CFLAGS) \
 	$(libwayland_server_la_LDFLAGS) $(LDFLAGS) -o $@
+@ENABLE_LIBRARIES_TRUE@am_libwayland_server_la_rpath = -rpath \
+@ENABLE_LIBRARIES_TRUE@	$(libdir)
 libwayland_util_la_LIBADD =
-am_libwayland_util_la_OBJECTS = src/connection.lo src/wayland-util.lo \
-	src/wayland-os.lo
+am_libwayland_util_la_OBJECTS =  \
+	src/libwayland_util_la-wayland-util.lo
 libwayland_util_la_OBJECTS = $(am_libwayland_util_la_OBJECTS)
-@ENABLE_CPP_TEST_TRUE@am__EXEEXT_1 = cpp-compile-test$(EXEEXT)
-am__EXEEXT_2 = array-test$(EXEEXT) client-test$(EXEEXT) \
-	display-test$(EXEEXT) connection-test$(EXEEXT) \
-	event-loop-test$(EXEEXT) fixed-test$(EXEEXT) \
-	list-test$(EXEEXT) map-test$(EXEEXT) os-wrappers-test$(EXEEXT) \
-	sanity-test$(EXEEXT) socket-test$(EXEEXT) queue-test$(EXEEXT) \
-	signal-test$(EXEEXT) resources-test$(EXEEXT) \
-	message-test$(EXEEXT) headers-test$(EXEEXT) $(am__EXEEXT_1)
+libwayland_util_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libwayland_util_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@ENABLE_CPP_TEST_TRUE@@ENABLE_LIBRARIES_TRUE@am__EXEEXT_1 = cpp-compile-test$(EXEEXT)
+@ENABLE_LIBRARIES_TRUE@am__EXEEXT_2 = array-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	client-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	display-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	connection-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	event-loop-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	fixed-test$(EXEEXT) list-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	map-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	os-wrappers-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	sanity-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	socket-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	queue-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	signal-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	resources-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	message-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	headers-test$(EXEEXT) $(am__EXEEXT_1)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
-am_array_test_OBJECTS = tests/array-test.$(OBJEXT)
+am__array_test_SOURCES_DIST = tests/array-test.c
+@ENABLE_LIBRARIES_TRUE@am_array_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/array-test.$(OBJEXT)
 array_test_OBJECTS = $(am_array_test_OBJECTS)
-array_test_DEPENDENCIES = libtest-runner.la
-am_client_test_OBJECTS = tests/client-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@array_test_DEPENDENCIES = libtest-runner.la
+am__client_test_SOURCES_DIST = tests/client-test.c
+@ENABLE_LIBRARIES_TRUE@am_client_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/client-test.$(OBJEXT)
 client_test_OBJECTS = $(am_client_test_OBJECTS)
-client_test_DEPENDENCIES = libtest-runner.la
-am_connection_test_OBJECTS = tests/connection-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@client_test_DEPENDENCIES = libtest-runner.la
+am__connection_test_SOURCES_DIST = tests/connection-test.c
+@ENABLE_LIBRARIES_TRUE@am_connection_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/connection-test.$(OBJEXT)
 connection_test_OBJECTS = $(am_connection_test_OBJECTS)
-connection_test_DEPENDENCIES = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@connection_test_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libtest-runner.la
 am__cpp_compile_test_SOURCES_DIST = tests/cpp-compile-test.cpp
-@ENABLE_CPP_TEST_TRUE@am_cpp_compile_test_OBJECTS =  \
-@ENABLE_CPP_TEST_TRUE@	tests/cpp-compile-test.$(OBJEXT)
+@ENABLE_CPP_TEST_TRUE@@ENABLE_LIBRARIES_TRUE@am_cpp_compile_test_OBJECTS = tests/cpp-compile-test.$(OBJEXT)
 cpp_compile_test_OBJECTS = $(am_cpp_compile_test_OBJECTS)
 cpp_compile_test_LDADD = $(LDADD)
-am_display_test_OBJECTS = tests/display-test.$(OBJEXT)
+am__display_test_SOURCES_DIST = tests/display-test.c
+@ENABLE_LIBRARIES_TRUE@am_display_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/display-test.$(OBJEXT)
 display_test_OBJECTS = $(am_display_test_OBJECTS)
-display_test_DEPENDENCIES = libtest-runner.la
-am_event_loop_test_OBJECTS = tests/event-loop-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@display_test_DEPENDENCIES = libtest-runner.la
+am__event_loop_test_SOURCES_DIST = tests/event-loop-test.c
+@ENABLE_LIBRARIES_TRUE@am_event_loop_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/event-loop-test.$(OBJEXT)
 event_loop_test_OBJECTS = $(am_event_loop_test_OBJECTS)
-event_loop_test_DEPENDENCIES = libtest-runner.la
-am_exec_fd_leak_checker_OBJECTS =  \
-	tests/exec-fd-leak-checker.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@event_loop_test_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libtest-runner.la
+am__exec_fd_leak_checker_SOURCES_DIST = tests/exec-fd-leak-checker.c
+@ENABLE_LIBRARIES_TRUE@am_exec_fd_leak_checker_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/exec-fd-leak-checker.$(OBJEXT)
 exec_fd_leak_checker_OBJECTS = $(am_exec_fd_leak_checker_OBJECTS)
-exec_fd_leak_checker_DEPENDENCIES = libtest-runner.la
-am_fixed_benchmark_OBJECTS = tests/fixed-benchmark.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@exec_fd_leak_checker_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libtest-runner.la
+am__fixed_benchmark_SOURCES_DIST = tests/fixed-benchmark.c
+@ENABLE_LIBRARIES_TRUE@am_fixed_benchmark_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/fixed-benchmark.$(OBJEXT)
 fixed_benchmark_OBJECTS = $(am_fixed_benchmark_OBJECTS)
-fixed_benchmark_DEPENDENCIES = libtest-runner.la
-am_fixed_test_OBJECTS = tests/fixed-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@fixed_benchmark_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libtest-runner.la
+am__fixed_test_SOURCES_DIST = tests/fixed-test.c
+@ENABLE_LIBRARIES_TRUE@am_fixed_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/fixed-test.$(OBJEXT)
 fixed_test_OBJECTS = $(am_fixed_test_OBJECTS)
-fixed_test_DEPENDENCIES = libtest-runner.la
-am_headers_test_OBJECTS = tests/headers-test.$(OBJEXT) \
-	tests/headers-protocol-test.$(OBJEXT) \
-	tests/headers-protocol-core-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@fixed_test_DEPENDENCIES = libtest-runner.la
+am__headers_test_SOURCES_DIST = tests/headers-test.c \
+	tests/headers-protocol-test.c \
+	tests/headers-protocol-core-test.c
+@ENABLE_LIBRARIES_TRUE@am_headers_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/headers-test.$(OBJEXT) \
+@ENABLE_LIBRARIES_TRUE@	tests/headers-protocol-test.$(OBJEXT) \
+@ENABLE_LIBRARIES_TRUE@	tests/headers-protocol-core-test.$(OBJEXT)
 nodist_headers_test_OBJECTS =
 headers_test_OBJECTS = $(am_headers_test_OBJECTS) \
 	$(nodist_headers_test_OBJECTS)
-headers_test_DEPENDENCIES = libtest-runner.la
-am_list_test_OBJECTS = tests/list-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@headers_test_DEPENDENCIES = libtest-runner.la
+am__list_test_SOURCES_DIST = tests/list-test.c
+@ENABLE_LIBRARIES_TRUE@am_list_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/list-test.$(OBJEXT)
 list_test_OBJECTS = $(am_list_test_OBJECTS)
-list_test_DEPENDENCIES = libtest-runner.la
-am_map_test_OBJECTS = tests/map-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@list_test_DEPENDENCIES = libtest-runner.la
+am__map_test_SOURCES_DIST = tests/map-test.c
+@ENABLE_LIBRARIES_TRUE@am_map_test_OBJECTS = tests/map-test.$(OBJEXT)
 map_test_OBJECTS = $(am_map_test_OBJECTS)
-map_test_DEPENDENCIES = libtest-runner.la
-am_message_test_OBJECTS = tests/message-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@map_test_DEPENDENCIES = libtest-runner.la
+am__message_test_SOURCES_DIST = tests/message-test.c
+@ENABLE_LIBRARIES_TRUE@am_message_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/message-test.$(OBJEXT)
 message_test_OBJECTS = $(am_message_test_OBJECTS)
-message_test_DEPENDENCIES = libtest-runner.la
-am_os_wrappers_test_OBJECTS = tests/os-wrappers-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@message_test_DEPENDENCIES = libtest-runner.la
+am__os_wrappers_test_SOURCES_DIST = tests/os-wrappers-test.c
+@ENABLE_LIBRARIES_TRUE@am_os_wrappers_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/os-wrappers-test.$(OBJEXT)
 os_wrappers_test_OBJECTS = $(am_os_wrappers_test_OBJECTS)
-os_wrappers_test_DEPENDENCIES = libtest-runner.la
-am_queue_test_OBJECTS = tests/queue-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@os_wrappers_test_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libtest-runner.la
+am__queue_test_SOURCES_DIST = tests/queue-test.c
+@ENABLE_LIBRARIES_TRUE@am_queue_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/queue-test.$(OBJEXT)
 queue_test_OBJECTS = $(am_queue_test_OBJECTS)
-queue_test_DEPENDENCIES = libtest-runner.la
-am_resources_test_OBJECTS = tests/resources-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@queue_test_DEPENDENCIES = libtest-runner.la
+am__resources_test_SOURCES_DIST = tests/resources-test.c
+@ENABLE_LIBRARIES_TRUE@am_resources_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/resources-test.$(OBJEXT)
 resources_test_OBJECTS = $(am_resources_test_OBJECTS)
-resources_test_DEPENDENCIES = libtest-runner.la
-am_sanity_test_OBJECTS = tests/sanity-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@resources_test_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libtest-runner.la
+am__sanity_test_SOURCES_DIST = tests/sanity-test.c
+@ENABLE_LIBRARIES_TRUE@am_sanity_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/sanity-test.$(OBJEXT)
 sanity_test_OBJECTS = $(am_sanity_test_OBJECTS)
-sanity_test_DEPENDENCIES = libtest-runner.la
-am_signal_test_OBJECTS = tests/signal-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@sanity_test_DEPENDENCIES = libtest-runner.la
+am__signal_test_SOURCES_DIST = tests/signal-test.c
+@ENABLE_LIBRARIES_TRUE@am_signal_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/signal-test.$(OBJEXT)
 signal_test_OBJECTS = $(am_signal_test_OBJECTS)
-signal_test_DEPENDENCIES = libtest-runner.la
-am_socket_test_OBJECTS = tests/socket-test.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@signal_test_DEPENDENCIES = libtest-runner.la
+am__socket_test_SOURCES_DIST = tests/socket-test.c
+@ENABLE_LIBRARIES_TRUE@am_socket_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/socket-test.$(OBJEXT)
 socket_test_OBJECTS = $(am_socket_test_OBJECTS)
-socket_test_DEPENDENCIES = libtest-runner.la
-am__wayland_scanner_SOURCES_DIST = src/scanner.c
-@ENABLE_SCANNER_TRUE@am_wayland_scanner_OBJECTS =  \
-@ENABLE_SCANNER_TRUE@	src/wayland_scanner-scanner.$(OBJEXT)
+@ENABLE_LIBRARIES_TRUE@socket_test_DEPENDENCIES = libtest-runner.la
+am_wayland_scanner_OBJECTS = src/wayland_scanner-scanner.$(OBJEXT)
 wayland_scanner_OBJECTS = $(am_wayland_scanner_OBJECTS)
-@ENABLE_SCANNER_TRUE@wayland_scanner_DEPENDENCIES =  \
-@ENABLE_SCANNER_TRUE@	$(am__DEPENDENCIES_1) libwayland-util.la
+wayland_scanner_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	libwayland-util.la
 wayland_scanner_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(wayland_scanner_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -350,6 +444,7 @@ am__v_CXXLD_1 =
 SOURCES = $(libtest_runner_la_SOURCES) $(libwayland_client_la_SOURCES) \
 	$(nodist_libwayland_client_la_SOURCES) \
 	$(libwayland_cursor_la_SOURCES) \
+	$(libwayland_private_la_SOURCES) \
 	$(libwayland_server_la_SOURCES) \
 	$(nodist_libwayland_server_la_SOURCES) \
 	$(libwayland_util_la_SOURCES) $(array_test_SOURCES) \
@@ -363,21 +458,28 @@ SOURCES = $(libtest_runner_la_SOURCES) $(libwayland_client_la_SOURCES) \
 	$(queue_test_SOURCES) $(resources_test_SOURCES) \
 	$(sanity_test_SOURCES) $(signal_test_SOURCES) \
 	$(socket_test_SOURCES) $(wayland_scanner_SOURCES)
-DIST_SOURCES = $(libtest_runner_la_SOURCES) \
-	$(libwayland_client_la_SOURCES) \
-	$(libwayland_cursor_la_SOURCES) \
-	$(libwayland_server_la_SOURCES) $(libwayland_util_la_SOURCES) \
-	$(array_test_SOURCES) $(client_test_SOURCES) \
-	$(connection_test_SOURCES) \
-	$(am__cpp_compile_test_SOURCES_DIST) $(display_test_SOURCES) \
-	$(event_loop_test_SOURCES) $(exec_fd_leak_checker_SOURCES) \
-	$(fixed_benchmark_SOURCES) $(fixed_test_SOURCES) \
-	$(headers_test_SOURCES) $(list_test_SOURCES) \
-	$(map_test_SOURCES) $(message_test_SOURCES) \
-	$(os_wrappers_test_SOURCES) $(queue_test_SOURCES) \
-	$(resources_test_SOURCES) $(sanity_test_SOURCES) \
-	$(signal_test_SOURCES) $(socket_test_SOURCES) \
-	$(am__wayland_scanner_SOURCES_DIST)
+DIST_SOURCES = $(am__libtest_runner_la_SOURCES_DIST) \
+	$(am__libwayland_client_la_SOURCES_DIST) \
+	$(am__libwayland_cursor_la_SOURCES_DIST) \
+	$(am__libwayland_private_la_SOURCES_DIST) \
+	$(am__libwayland_server_la_SOURCES_DIST) \
+	$(libwayland_util_la_SOURCES) $(am__array_test_SOURCES_DIST) \
+	$(am__client_test_SOURCES_DIST) \
+	$(am__connection_test_SOURCES_DIST) \
+	$(am__cpp_compile_test_SOURCES_DIST) \
+	$(am__display_test_SOURCES_DIST) \
+	$(am__event_loop_test_SOURCES_DIST) \
+	$(am__exec_fd_leak_checker_SOURCES_DIST) \
+	$(am__fixed_benchmark_SOURCES_DIST) \
+	$(am__fixed_test_SOURCES_DIST) \
+	$(am__headers_test_SOURCES_DIST) $(am__list_test_SOURCES_DIST) \
+	$(am__map_test_SOURCES_DIST) $(am__message_test_SOURCES_DIST) \
+	$(am__os_wrappers_test_SOURCES_DIST) \
+	$(am__queue_test_SOURCES_DIST) \
+	$(am__resources_test_SOURCES_DIST) \
+	$(am__sanity_test_SOURCES_DIST) \
+	$(am__signal_test_SOURCES_DIST) \
+	$(am__socket_test_SOURCES_DIST) $(wayland_scanner_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -392,6 +494,11 @@ am__can_run_installinfo = \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
 DATA = $(dist_aclocal_DATA) $(dist_pkgdata_DATA) $(pkgconfig_DATA)
+am__include_HEADERS_DIST = src/wayland-util.h src/wayland-server.h \
+	src/wayland-server-core.h src/wayland-client.h \
+	src/wayland-client-core.h src/wayland-egl.h \
+	src/wayland-egl-core.h src/wayland-version.h \
+	cursor/wayland-cursor.h
 HEADERS = $(include_HEADERS) $(nodist_include_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -780,6 +887,12 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @BUILD_DOCS_TRUE@SUBDIRS = doc
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
+AM_CPPFLAGS = \
+	-I$(top_builddir)/src			\
+	-I$(top_srcdir)/src			\
+	-I$(top_builddir)/protocol
+
+AM_CFLAGS = $(GCC_CFLAGS)
 aclocaldir = $(datadir)/aclocal
 dist_aclocal_DATA = wayland-scanner.m4
 dist_pkgdata_DATA = \
@@ -788,142 +901,145 @@ dist_pkgdata_DATA = \
 	protocol/wayland.dtd
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = src/wayland-client.pc src/wayland-server.pc \
-	$(am__append_1) cursor/wayland-cursor.pc
-lib_LTLIBRARIES = libwayland-server.la libwayland-client.la \
-	libwayland-cursor.la
-noinst_LTLIBRARIES = libwayland-util.la
-include_HEADERS = src/wayland-util.h src/wayland-server.h \
-	src/wayland-server-core.h src/wayland-client.h \
-	src/wayland-client-core.h src/wayland-egl.h \
-	src/wayland-egl-core.h src/wayland-version.h \
-	cursor/wayland-cursor.h
-nodist_include_HEADERS = \
-	protocol/wayland-server-protocol.h	\
-	protocol/wayland-client-protocol.h
-
+pkgconfig_DATA = src/wayland-scanner.pc $(am__append_2)
+wayland_scanner_SOURCES = src/scanner.c
+wayland_scanner_CFLAGS = $(EXPAT_CFLAGS) $(AM_CFLAGS)
+wayland_scanner_LDADD = $(EXPAT_LIBS) libwayland-util.la
+@USE_HOST_SCANNER_FALSE@wayland_scanner = $(top_builddir)/wayland-scanner
+@USE_HOST_SCANNER_TRUE@wayland_scanner = wayland-scanner
+libwayland_util_la_CFLAGS = $(AM_CFLAGS)
 libwayland_util_la_SOURCES = \
-	src/connection.c			\
 	src/wayland-util.c			\
-	src/wayland-util.h			\
-	src/wayland-os.c			\
-	src/wayland-os.h			\
-	src/wayland-private.h
+	src/wayland-util.h
 
-libwayland_server_la_CFLAGS = $(FFI_CFLAGS) $(GCC_CFLAGS) -pthread
-libwayland_server_la_LIBADD = $(FFI_LIBS) libwayland-util.la -lrt -lm
-libwayland_server_la_LDFLAGS = -version-info 1:0:1
-libwayland_server_la_SOURCES = \
-	src/wayland-server.c			\
-	src/wayland-shm.c			\
-	src/event-loop.c
+noinst_LTLIBRARIES = libwayland-util.la $(am__append_1)
+@ENABLE_LIBRARIES_TRUE@lib_LTLIBRARIES = libwayland-server.la \
+@ENABLE_LIBRARIES_TRUE@	libwayland-client.la \
+@ENABLE_LIBRARIES_TRUE@	libwayland-cursor.la
+@ENABLE_LIBRARIES_TRUE@libwayland_private_la_CFLAGS = $(FFI_CFLAGS) $(AM_CFLAGS)
+@ENABLE_LIBRARIES_TRUE@libwayland_private_la_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	src/connection.c			\
+@ENABLE_LIBRARIES_TRUE@	src/wayland-os.c			\
+@ENABLE_LIBRARIES_TRUE@	src/wayland-os.h			\
+@ENABLE_LIBRARIES_TRUE@	src/wayland-private.h
 
-nodist_libwayland_server_la_SOURCES = \
-	protocol/wayland-server-protocol.h	\
-	protocol/wayland-protocol.c
+@ENABLE_LIBRARIES_TRUE@include_HEADERS = src/wayland-util.h \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-server.h \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-server-core.h \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-client.h \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-client-core.h \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-egl.h \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-egl-core.h \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-version.h \
+@ENABLE_LIBRARIES_TRUE@	cursor/wayland-cursor.h
+@ENABLE_LIBRARIES_TRUE@nodist_include_HEADERS = \
+@ENABLE_LIBRARIES_TRUE@	protocol/wayland-server-protocol.h	\
+@ENABLE_LIBRARIES_TRUE@	protocol/wayland-client-protocol.h
 
-libwayland_client_la_CFLAGS = $(FFI_CFLAGS) $(GCC_CFLAGS) -pthread
-libwayland_client_la_LIBADD = $(FFI_LIBS) libwayland-util.la -lrt -lm
-libwayland_client_la_LDFLAGS = -version-info 3:0:3
-libwayland_client_la_SOURCES = \
-	src/wayland-client.c
+@ENABLE_LIBRARIES_TRUE@libwayland_server_la_CFLAGS = $(FFI_CFLAGS) $(AM_CFLAGS) -pthread
+@ENABLE_LIBRARIES_TRUE@libwayland_server_la_LIBADD = $(FFI_LIBS) libwayland-private.la libwayland-util.la -lrt -lm
+@ENABLE_LIBRARIES_TRUE@libwayland_server_la_LDFLAGS = -version-info 1:0:1
+@ENABLE_LIBRARIES_TRUE@libwayland_server_la_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-server.c			\
+@ENABLE_LIBRARIES_TRUE@	src/wayland-shm.c			\
+@ENABLE_LIBRARIES_TRUE@	src/event-loop.c
 
-nodist_libwayland_client_la_SOURCES = \
-	protocol/wayland-client-protocol.h	\
-	protocol/wayland-protocol.c
+@ENABLE_LIBRARIES_TRUE@nodist_libwayland_server_la_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	protocol/wayland-server-protocol.h	\
+@ENABLE_LIBRARIES_TRUE@	protocol/wayland-protocol.c
 
-@ENABLE_SCANNER_FALSE@wayland_scanner = wayland-scanner
-@ENABLE_SCANNER_TRUE@wayland_scanner = $(top_builddir)/wayland-scanner
-@ENABLE_SCANNER_TRUE@wayland_scanner_SOURCES = src/scanner.c
-@ENABLE_SCANNER_TRUE@wayland_scanner_CFLAGS = $(EXPAT_CFLAGS) $(AM_CFLAGS)
-@ENABLE_SCANNER_TRUE@wayland_scanner_LDADD = $(EXPAT_LIBS) libwayland-util.la
-BUILT_SOURCES = \
-	$(nodist_libwayland_server_la_SOURCES)	\
-	$(nodist_libwayland_client_la_SOURCES)	\
-	$(nodist_headers_test_SOURCES)
+@ENABLE_LIBRARIES_TRUE@libwayland_client_la_CFLAGS = $(FFI_CFLAGS) $(AM_CFLAGS) -pthread
+@ENABLE_LIBRARIES_TRUE@libwayland_client_la_LIBADD = $(FFI_LIBS) libwayland-private.la libwayland-util.la -lrt -lm
+@ENABLE_LIBRARIES_TRUE@libwayland_client_la_LDFLAGS = -version-info 3:0:3
+@ENABLE_LIBRARIES_TRUE@libwayland_client_la_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	src/wayland-client.c
 
-CLEANFILES = $(BUILT_SOURCES)
-DISTCLEANFILES = src/wayland-version.h
-EXTRA_DIST = src/wayland-version.h.in
-libwayland_cursor_la_SOURCES = \
-	cursor/wayland-cursor.c			\
-	cursor/os-compatibility.c		\
-	cursor/os-compatibility.h		\
-	cursor/cursor-data.h			\
-	cursor/xcursor.c			\
-	cursor/xcursor.h
+@ENABLE_LIBRARIES_TRUE@nodist_libwayland_client_la_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	protocol/wayland-client-protocol.h	\
+@ENABLE_LIBRARIES_TRUE@	protocol/wayland-protocol.c
 
-libwayland_cursor_la_LIBADD = libwayland-client.la
-libwayland_cursor_la_CFLAGS = \
-	$(GCC_CFLAGS)				\
-	-I$(top_builddir)/src			\
-	-I$(top_srcdir)/src			\
-	-DICONDIR=\"$(ICONDIR)\"
+@ENABLE_LIBRARIES_TRUE@BUILT_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	$(nodist_libwayland_server_la_SOURCES)	\
+@ENABLE_LIBRARIES_TRUE@	$(nodist_libwayland_client_la_SOURCES)	\
+@ENABLE_LIBRARIES_TRUE@	$(nodist_headers_test_SOURCES)
 
-check_LTLIBRARIES = libtest-runner.la
-libtest_runner_la_SOURCES = \
-	tests/test-runner.c			\
-	tests/test-runner.h			\
-	tests/test-helpers.c			\
-	tests/test-compositor.h			\
-	tests/test-compositor.c
+@ENABLE_LIBRARIES_TRUE@CLEANFILES = $(BUILT_SOURCES) doc/doxygen/doxygen_sqlite3.db
+@ENABLE_LIBRARIES_TRUE@DISTCLEANFILES = src/wayland-version.h
+@ENABLE_LIBRARIES_TRUE@EXTRA_DIST = src/wayland-version.h.in
+@ENABLE_LIBRARIES_TRUE@libwayland_cursor_la_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	cursor/wayland-cursor.c			\
+@ENABLE_LIBRARIES_TRUE@	cursor/os-compatibility.c		\
+@ENABLE_LIBRARIES_TRUE@	cursor/os-compatibility.h		\
+@ENABLE_LIBRARIES_TRUE@	cursor/cursor-data.h			\
+@ENABLE_LIBRARIES_TRUE@	cursor/xcursor.c			\
+@ENABLE_LIBRARIES_TRUE@	cursor/xcursor.h
 
-libtest_runner_la_LIBADD = \
-	libwayland-util.la			\
-	libwayland-client.la			\
-	libwayland-server.la			\
-	-lrt -ldl $(FFI_LIBS)
+@ENABLE_LIBRARIES_TRUE@libwayland_cursor_la_LIBADD = libwayland-client.la
+@ENABLE_LIBRARIES_TRUE@libwayland_cursor_la_CFLAGS = \
+@ENABLE_LIBRARIES_TRUE@	$(AM_CFLAGS)				\
+@ENABLE_LIBRARIES_TRUE@	-I$(top_builddir)/src			\
+@ENABLE_LIBRARIES_TRUE@	-I$(top_srcdir)/src			\
+@ENABLE_LIBRARIES_TRUE@	-DICONDIR=\"$(ICONDIR)\"
 
-array_test_SOURCES = tests/array-test.c
-array_test_LDADD = libtest-runner.la
-client_test_SOURCES = tests/client-test.c
-client_test_LDADD = libtest-runner.la
-display_test_SOURCES = tests/display-test.c
-display_test_LDADD = libtest-runner.la
-connection_test_SOURCES = tests/connection-test.c
-connection_test_LDADD = libtest-runner.la
-event_loop_test_SOURCES = tests/event-loop-test.c
-event_loop_test_LDADD = libtest-runner.la
-fixed_test_SOURCES = tests/fixed-test.c
-fixed_test_LDADD = libtest-runner.la
-list_test_SOURCES = tests/list-test.c
-list_test_LDADD = libtest-runner.la
-map_test_SOURCES = tests/map-test.c
-map_test_LDADD = libtest-runner.la
-sanity_test_SOURCES = tests/sanity-test.c
-sanity_test_LDADD = libtest-runner.la
-socket_test_SOURCES = tests/socket-test.c
-socket_test_LDADD = libtest-runner.la
-queue_test_SOURCES = tests/queue-test.c
-queue_test_LDADD = libtest-runner.la
-signal_test_SOURCES = tests/signal-test.c
-signal_test_LDADD = libtest-runner.la
-resources_test_SOURCES = tests/resources-test.c
-resources_test_LDADD = libtest-runner.la
-message_test_SOURCES = tests/message-test.c
-message_test_LDADD = libtest-runner.la
-headers_test_SOURCES = tests/headers-test.c \
-		       tests/headers-protocol-test.c \
-		       tests/headers-protocol-core-test.c
+@ENABLE_LIBRARIES_TRUE@check_LTLIBRARIES = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@libtest_runner_la_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	tests/test-runner.c			\
+@ENABLE_LIBRARIES_TRUE@	tests/test-runner.h			\
+@ENABLE_LIBRARIES_TRUE@	tests/test-helpers.c			\
+@ENABLE_LIBRARIES_TRUE@	tests/test-compositor.h			\
+@ENABLE_LIBRARIES_TRUE@	tests/test-compositor.c
 
-headers_test_LDADD = libtest-runner.la
-nodist_headers_test_SOURCES = \
-	protocol/wayland-server-protocol-core.h	\
-	protocol/wayland-client-protocol-core.h
+@ENABLE_LIBRARIES_TRUE@libtest_runner_la_LIBADD = \
+@ENABLE_LIBRARIES_TRUE@	libwayland-private.la			\
+@ENABLE_LIBRARIES_TRUE@	libwayland-util.la			\
+@ENABLE_LIBRARIES_TRUE@	libwayland-client.la			\
+@ENABLE_LIBRARIES_TRUE@	libwayland-server.la			\
+@ENABLE_LIBRARIES_TRUE@	-lrt -ldl $(FFI_LIBS)
 
-@ENABLE_CPP_TEST_TRUE@cpp_compile_test_SOURCES = tests/cpp-compile-test.cpp
-fixed_benchmark_SOURCES = tests/fixed-benchmark.c
-fixed_benchmark_LDADD = libtest-runner.la
-os_wrappers_test_SOURCES = tests/os-wrappers-test.c
-os_wrappers_test_LDADD = libtest-runner.la
-AM_CPPFLAGS = \
-	-I$(top_builddir)/src			\
-	-I$(top_srcdir)/src			\
-	-I$(top_builddir)/protocol
+@ENABLE_LIBRARIES_TRUE@array_test_SOURCES = tests/array-test.c
+@ENABLE_LIBRARIES_TRUE@array_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@client_test_SOURCES = tests/client-test.c
+@ENABLE_LIBRARIES_TRUE@client_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@display_test_SOURCES = tests/display-test.c
+@ENABLE_LIBRARIES_TRUE@display_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@connection_test_SOURCES = tests/connection-test.c
+@ENABLE_LIBRARIES_TRUE@connection_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@event_loop_test_SOURCES = tests/event-loop-test.c
+@ENABLE_LIBRARIES_TRUE@event_loop_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@fixed_test_SOURCES = tests/fixed-test.c
+@ENABLE_LIBRARIES_TRUE@fixed_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@list_test_SOURCES = tests/list-test.c
+@ENABLE_LIBRARIES_TRUE@list_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@map_test_SOURCES = tests/map-test.c
+@ENABLE_LIBRARIES_TRUE@map_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@sanity_test_SOURCES = tests/sanity-test.c
+@ENABLE_LIBRARIES_TRUE@sanity_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@socket_test_SOURCES = tests/socket-test.c
+@ENABLE_LIBRARIES_TRUE@socket_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@queue_test_SOURCES = tests/queue-test.c
+@ENABLE_LIBRARIES_TRUE@queue_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@signal_test_SOURCES = tests/signal-test.c
+@ENABLE_LIBRARIES_TRUE@signal_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@resources_test_SOURCES = tests/resources-test.c
+@ENABLE_LIBRARIES_TRUE@resources_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@message_test_SOURCES = tests/message-test.c
+@ENABLE_LIBRARIES_TRUE@message_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@headers_test_SOURCES = tests/headers-test.c \
+@ENABLE_LIBRARIES_TRUE@		       tests/headers-protocol-test.c \
+@ENABLE_LIBRARIES_TRUE@		       tests/headers-protocol-core-test.c
 
-AM_CFLAGS = $(GCC_CFLAGS) $(FFI_CFLAGS)
-exec_fd_leak_checker_SOURCES = tests/exec-fd-leak-checker.c
-exec_fd_leak_checker_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@headers_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@nodist_headers_test_SOURCES = \
+@ENABLE_LIBRARIES_TRUE@	protocol/wayland-server-protocol-core.h	\
+@ENABLE_LIBRARIES_TRUE@	protocol/wayland-client-protocol-core.h
+
+@ENABLE_CPP_TEST_TRUE@@ENABLE_LIBRARIES_TRUE@cpp_compile_test_SOURCES = tests/cpp-compile-test.cpp
+@ENABLE_LIBRARIES_TRUE@fixed_benchmark_SOURCES = tests/fixed-benchmark.c
+@ENABLE_LIBRARIES_TRUE@fixed_benchmark_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@os_wrappers_test_SOURCES = tests/os-wrappers-test.c
+@ENABLE_LIBRARIES_TRUE@os_wrappers_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@exec_fd_leak_checker_SOURCES = tests/exec-fd-leak-checker.c
+@ENABLE_LIBRARIES_TRUE@exec_fd_leak_checker_LDADD = libtest-runner.la
 all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -1067,7 +1183,7 @@ tests/test-compositor.lo: tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 
 libtest-runner.la: $(libtest_runner_la_OBJECTS) $(libtest_runner_la_DEPENDENCIES) $(EXTRA_libtest_runner_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libtest_runner_la_OBJECTS) $(libtest_runner_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(LINK) $(am_libtest_runner_la_rpath) $(libtest_runner_la_OBJECTS) $(libtest_runner_la_LIBADD) $(LIBS)
 src/$(am__dirstamp):
 	@$(MKDIR_P) src
 	@: > src/$(am__dirstamp)
@@ -1086,7 +1202,7 @@ protocol/libwayland_client_la-wayland-protocol.lo:  \
 	protocol/$(am__dirstamp) protocol/$(DEPDIR)/$(am__dirstamp)
 
 libwayland-client.la: $(libwayland_client_la_OBJECTS) $(libwayland_client_la_DEPENDENCIES) $(EXTRA_libwayland_client_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libwayland_client_la_LINK) -rpath $(libdir) $(libwayland_client_la_OBJECTS) $(libwayland_client_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libwayland_client_la_LINK) $(am_libwayland_client_la_rpath) $(libwayland_client_la_OBJECTS) $(libwayland_client_la_LIBADD) $(LIBS)
 cursor/$(am__dirstamp):
 	@$(MKDIR_P) cursor
 	@: > cursor/$(am__dirstamp)
@@ -1101,7 +1217,14 @@ cursor/libwayland_cursor_la-xcursor.lo: cursor/$(am__dirstamp) \
 	cursor/$(DEPDIR)/$(am__dirstamp)
 
 libwayland-cursor.la: $(libwayland_cursor_la_OBJECTS) $(libwayland_cursor_la_DEPENDENCIES) $(EXTRA_libwayland_cursor_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libwayland_cursor_la_LINK) -rpath $(libdir) $(libwayland_cursor_la_OBJECTS) $(libwayland_cursor_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libwayland_cursor_la_LINK) $(am_libwayland_cursor_la_rpath) $(libwayland_cursor_la_OBJECTS) $(libwayland_cursor_la_LIBADD) $(LIBS)
+src/libwayland_private_la-connection.lo: src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+src/libwayland_private_la-wayland-os.lo: src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
+
+libwayland-private.la: $(libwayland_private_la_OBJECTS) $(libwayland_private_la_DEPENDENCIES) $(EXTRA_libwayland_private_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libwayland_private_la_LINK) $(am_libwayland_private_la_rpath) $(libwayland_private_la_OBJECTS) $(libwayland_private_la_LIBADD) $(LIBS)
 src/libwayland_server_la-wayland-server.lo: src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
 src/libwayland_server_la-wayland-shm.lo: src/$(am__dirstamp) \
@@ -1112,13 +1235,12 @@ protocol/libwayland_server_la-wayland-protocol.lo:  \
 	protocol/$(am__dirstamp) protocol/$(DEPDIR)/$(am__dirstamp)
 
 libwayland-server.la: $(libwayland_server_la_OBJECTS) $(libwayland_server_la_DEPENDENCIES) $(EXTRA_libwayland_server_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libwayland_server_la_LINK) -rpath $(libdir) $(libwayland_server_la_OBJECTS) $(libwayland_server_la_LIBADD) $(LIBS)
-src/connection.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/wayland-util.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
-src/wayland-os.lo: src/$(am__dirstamp) src/$(DEPDIR)/$(am__dirstamp)
+	$(AM_V_CCLD)$(libwayland_server_la_LINK) $(am_libwayland_server_la_rpath) $(libwayland_server_la_OBJECTS) $(libwayland_server_la_LIBADD) $(LIBS)
+src/libwayland_util_la-wayland-util.lo: src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 
 libwayland-util.la: $(libwayland_util_la_OBJECTS) $(libwayland_util_la_DEPENDENCIES) $(EXTRA_libwayland_util_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libwayland_util_la_OBJECTS) $(libwayland_util_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libwayland_util_la_LINK)  $(libwayland_util_la_OBJECTS) $(libwayland_util_la_LIBADD) $(LIBS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_PROGRAMS)'; test -n "$(bindir)" || list=; \
@@ -1330,13 +1452,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@cursor/$(DEPDIR)/libwayland_cursor_la-xcursor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@protocol/$(DEPDIR)/libwayland_client_la-wayland-protocol.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@protocol/$(DEPDIR)/libwayland_server_la-wayland-protocol.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/connection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_client_la-wayland-client.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_private_la-connection.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_private_la-wayland-os.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_server_la-event-loop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_server_la-wayland-server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_server_la-wayland-shm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/wayland-os.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/wayland-util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_util_la-wayland-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/wayland_scanner-scanner.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/array-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/client-test.Po@am__quote@
@@ -1422,6 +1544,20 @@ cursor/libwayland_cursor_la-xcursor.lo: cursor/xcursor.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_cursor_la_CFLAGS) $(CFLAGS) -c -o cursor/libwayland_cursor_la-xcursor.lo `test -f 'cursor/xcursor.c' || echo '$(srcdir)/'`cursor/xcursor.c
 
+src/libwayland_private_la-connection.lo: src/connection.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_private_la_CFLAGS) $(CFLAGS) -MT src/libwayland_private_la-connection.lo -MD -MP -MF src/$(DEPDIR)/libwayland_private_la-connection.Tpo -c -o src/libwayland_private_la-connection.lo `test -f 'src/connection.c' || echo '$(srcdir)/'`src/connection.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/libwayland_private_la-connection.Tpo src/$(DEPDIR)/libwayland_private_la-connection.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/connection.c' object='src/libwayland_private_la-connection.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_private_la_CFLAGS) $(CFLAGS) -c -o src/libwayland_private_la-connection.lo `test -f 'src/connection.c' || echo '$(srcdir)/'`src/connection.c
+
+src/libwayland_private_la-wayland-os.lo: src/wayland-os.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_private_la_CFLAGS) $(CFLAGS) -MT src/libwayland_private_la-wayland-os.lo -MD -MP -MF src/$(DEPDIR)/libwayland_private_la-wayland-os.Tpo -c -o src/libwayland_private_la-wayland-os.lo `test -f 'src/wayland-os.c' || echo '$(srcdir)/'`src/wayland-os.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/libwayland_private_la-wayland-os.Tpo src/$(DEPDIR)/libwayland_private_la-wayland-os.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/wayland-os.c' object='src/libwayland_private_la-wayland-os.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_private_la_CFLAGS) $(CFLAGS) -c -o src/libwayland_private_la-wayland-os.lo `test -f 'src/wayland-os.c' || echo '$(srcdir)/'`src/wayland-os.c
+
 src/libwayland_server_la-wayland-server.lo: src/wayland-server.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_server_la_CFLAGS) $(CFLAGS) -MT src/libwayland_server_la-wayland-server.lo -MD -MP -MF src/$(DEPDIR)/libwayland_server_la-wayland-server.Tpo -c -o src/libwayland_server_la-wayland-server.lo `test -f 'src/wayland-server.c' || echo '$(srcdir)/'`src/wayland-server.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/libwayland_server_la-wayland-server.Tpo src/$(DEPDIR)/libwayland_server_la-wayland-server.Plo
@@ -1449,6 +1585,13 @@ protocol/libwayland_server_la-wayland-protocol.lo: protocol/wayland-protocol.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='protocol/wayland-protocol.c' object='protocol/libwayland_server_la-wayland-protocol.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_server_la_CFLAGS) $(CFLAGS) -c -o protocol/libwayland_server_la-wayland-protocol.lo `test -f 'protocol/wayland-protocol.c' || echo '$(srcdir)/'`protocol/wayland-protocol.c
+
+src/libwayland_util_la-wayland-util.lo: src/wayland-util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_util_la_CFLAGS) $(CFLAGS) -MT src/libwayland_util_la-wayland-util.lo -MD -MP -MF src/$(DEPDIR)/libwayland_util_la-wayland-util.Tpo -c -o src/libwayland_util_la-wayland-util.lo `test -f 'src/wayland-util.c' || echo '$(srcdir)/'`src/wayland-util.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) src/$(DEPDIR)/libwayland_util_la-wayland-util.Tpo src/$(DEPDIR)/libwayland_util_la-wayland-util.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='src/wayland-util.c' object='src/libwayland_util_la-wayland-util.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwayland_util_la_CFLAGS) $(CFLAGS) -c -o src/libwayland_util_la-wayland-util.lo `test -f 'src/wayland-util.c' || echo '$(srcdir)/'`src/wayland-util.c
 
 src/wayland_scanner-scanner.o: src/scanner.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(wayland_scanner_CFLAGS) $(CFLAGS) -MT src/wayland_scanner-scanner.o -MD -MP -MF src/$(DEPDIR)/wayland_scanner-scanner.Tpo -c -o src/wayland_scanner-scanner.o `test -f 'src/scanner.c' || echo '$(srcdir)/'`src/scanner.c
@@ -2343,22 +2486,22 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_aclocalDATA \
 	uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS \
 	uninstall-pkgconfigDATA
 
-@ENABLE_SCANNER_TRUE@$(BUILT_SOURCES) : wayland-scanner
+@USE_HOST_SCANNER_FALSE@$(BUILT_SOURCES) : wayland-scanner
 
-protocol/%-protocol.c : $(top_srcdir)/protocol/%.xml
-	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) code < $< > $@
+@ENABLE_LIBRARIES_TRUE@protocol/%-protocol.c : $(top_srcdir)/protocol/%.xml
+@ENABLE_LIBRARIES_TRUE@	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) code < $< > $@
 
-protocol/%-server-protocol.h : $(top_srcdir)/protocol/%.xml
-	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) server-header < $< > $@
+@ENABLE_LIBRARIES_TRUE@protocol/%-server-protocol.h : $(top_srcdir)/protocol/%.xml
+@ENABLE_LIBRARIES_TRUE@	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) server-header < $< > $@
 
-protocol/%-client-protocol.h : $(top_srcdir)/protocol/%.xml
-	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) client-header < $< > $@
+@ENABLE_LIBRARIES_TRUE@protocol/%-client-protocol.h : $(top_srcdir)/protocol/%.xml
+@ENABLE_LIBRARIES_TRUE@	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) client-header < $< > $@
 
-protocol/%-server-protocol-core.h : $(top_srcdir)/protocol/%.xml
-	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) server-header -c < $< > $@
+@ENABLE_LIBRARIES_TRUE@protocol/%-server-protocol-core.h : $(top_srcdir)/protocol/%.xml
+@ENABLE_LIBRARIES_TRUE@	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) server-header -c < $< > $@
 
-protocol/%-client-protocol-core.h : $(top_srcdir)/protocol/%.xml
-	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) client-header -c < $< > $@
+@ENABLE_LIBRARIES_TRUE@protocol/%-client-protocol-core.h : $(top_srcdir)/protocol/%.xml
+@ENABLE_LIBRARIES_TRUE@	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(wayland_scanner) client-header -c < $< > $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
