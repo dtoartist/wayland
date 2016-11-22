@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <errno.h>
 #include <sys/uio.h>
-#include <assert.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -164,10 +163,10 @@ wl_connection_create(int fd)
 {
 	struct wl_connection *connection;
 
-	connection = malloc(sizeof *connection);
+	connection = zalloc(sizeof *connection);
 	if (connection == NULL)
 		return NULL;
-	memset(connection, 0, sizeof *connection);
+
 	connection->fd = fd;
 
 	return connection;
@@ -315,6 +314,12 @@ wl_connection_flush(struct wl_connection *connection)
 	return connection->out.head - tail;
 }
 
+uint32_t
+wl_connection_pending_input(struct wl_connection *connection)
+{
+	return wl_buffer_size(&connection->in);
+}
+
 int
 wl_connection_read(struct wl_connection *connection)
 {
@@ -351,7 +356,7 @@ wl_connection_read(struct wl_connection *connection)
 
 	connection->in.head += len;
 
-	return connection->in.head - connection->in.tail;
+	return wl_connection_pending_input(connection);
 }
 
 int
@@ -398,6 +403,12 @@ wl_message_count_arrays(const struct wl_message *message)
 	}
 
 	return arrays;
+}
+
+int
+wl_connection_get_fd(struct wl_connection *connection)
+{
+	return connection->fd;
 }
 
 static int
@@ -569,16 +580,12 @@ wl_closure_marshal(struct wl_object *sender, uint32_t opcode,
 		case 'h':
 			fd = args[i].h;
 			dup_fd = wl_os_dupfd_cloexec(fd, 0);
-			if (dup_fd < 0) {
-				wl_log("dup failed: %m");
-				abort();
-			}
+			if (dup_fd < 0)
+				wl_abort("dup failed: %s\n", strerror(errno));
 			closure->args[i].h = dup_fd;
 			break;
 		default:
-			wl_log("unhandled format code: '%c'\n",
-				arg.type);
-			assert(0);
+			wl_abort("unhandled format code: '%c'\n", arg.type);
 			break;
 		}
 	}
@@ -771,8 +778,7 @@ wl_connection_demarshal(struct wl_connection *connection,
 			closure->args[i].h = fd;
 			break;
 		default:
-			wl_log("unknown type\n");
-			assert(0);
+			wl_abort("unknown type\n");
 			break;
 		}
 	}
@@ -789,19 +795,6 @@ wl_connection_demarshal(struct wl_connection *connection,
 	wl_connection_consume(connection, size);
 
 	return NULL;
-}
-
-int
-wl_interface_equal(const struct wl_interface *a, const struct wl_interface *b)
-{
-	/* In most cases the pointer equality test is sufficient.
-	 * However, in some cases, depending on how things are split
-	 * across shared objects, we can end up with multiple
-	 * instances of the interface metadata constants.  So if the
-	 * pointers match, the interfaces are equal, if they don't
-	 * match we have to compare the interface names. */
-
-	return a == b || strcmp(a->name, b->name) == 0;
 }
 
 int
@@ -832,7 +825,6 @@ wl_closure_lookup_objects(struct wl_closure *closure, struct wl_map *objects)
 			} else if (object == NULL && id != 0) {
 				wl_log("unknown object (%u), message %s(%s)\n",
 				       id, message->name, message->signature);
-				object = NULL;
 				errno = EINVAL;
 				return -1;
 			}
@@ -906,8 +898,7 @@ convert_arguments_to_ffi(const char *signature, uint32_t flags,
 			ffi_args[i] = &args[i].h;
 			break;
 		default:
-			wl_log("unknown type\n");
-			assert(0);
+			wl_abort("unknown type\n");
 			break;
 		}
 	}
@@ -938,9 +929,8 @@ wl_closure_invoke(struct wl_closure *closure, uint32_t flags,
 
 	implementation = target->implementation;
 	if (!implementation[opcode]) {
-		wl_log("listener function for opcode %u of %s is NULL\n",
-			opcode, target->interface->name);
-		abort();
+		wl_abort("listener function for opcode %u of %s is NULL\n",
+			 opcode, target->interface->name);
 	}
 	ffi_call(&cif, implementation[opcode], NULL, ffi_args);
 }
@@ -1133,7 +1123,7 @@ wl_closure_send(struct wl_closure *closure, struct wl_connection *connection)
 		return -1;
 
 	buffer_size = buffer_size_for_closure(closure);
-	buffer = malloc(buffer_size * sizeof buffer[0]);
+	buffer = zalloc(buffer_size * sizeof buffer[0]);
 	if (buffer == NULL)
 		return -1;
 

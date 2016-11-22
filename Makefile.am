@@ -24,9 +24,14 @@ pkgconfig_DATA =
 
 bin_PROGRAMS = wayland-scanner
 wayland_scanner_SOURCES = src/scanner.c
-wayland_scanner_CFLAGS = $(EXPAT_CFLAGS) $(AM_CFLAGS)
-wayland_scanner_LDADD = $(EXPAT_LIBS) libwayland-util.la
+wayland_scanner_CFLAGS = $(EXPAT_CFLAGS) $(LIBXML_CFLAGS) $(AM_CFLAGS)
+wayland_scanner_LDADD = $(EXPAT_LIBS) $(LIBXML_LIBS) libwayland-util.la
 pkgconfig_DATA += src/wayland-scanner.pc
+
+if DTD_VALIDATION
+wayland_scanner_SOURCES += src/dtddata.S
+endif
+src/dtddata.o: protocol/wayland.dtd
 
 if USE_HOST_SCANNER
 wayland_scanner = wayland-scanner
@@ -155,7 +160,9 @@ TESTS =						\
 	signal-test				\
 	resources-test				\
 	message-test				\
-	headers-test
+	headers-test				\
+	compositor-introspection-test		\
+	protocol-logger-test
 
 if ENABLE_CPP_TEST
 TESTS += cpp-compile-test
@@ -212,6 +219,10 @@ resources_test_SOURCES = tests/resources-test.c
 resources_test_LDADD = libtest-runner.la
 message_test_SOURCES = tests/message-test.c
 message_test_LDADD = libtest-runner.la
+compositor_introspection_test_SOURCES = tests/compositor-introspection-test.c
+compositor_introspection_test_LDADD = libtest-runner.la
+protocol_logger_test_SOURCES = tests/protocol-logger-test.c
+protocol_logger_test_LDADD = libtest-runner.la
 headers_test_SOURCES = tests/headers-test.c \
 		       tests/headers-protocol-test.c \
 		       tests/headers-protocol-core-test.c

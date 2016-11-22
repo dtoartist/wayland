@@ -51,7 +51,8 @@
 
 enum wl_proxy_flag {
 	WL_PROXY_FLAG_ID_DELETED = (1 << 0),
-	WL_PROXY_FLAG_DESTROYED = (1 << 1)
+	WL_PROXY_FLAG_DESTROYED = (1 << 1),
+	WL_PROXY_FLAG_WRAPPER = (1 << 2),
 };
 
 struct wl_proxy {
@@ -62,6 +63,7 @@ struct wl_proxy {
 	int refcount;
 	void *user_data;
 	wl_dispatcher_func_t dispatcher;
+	uint32_t version;
 };
 
 struct wl_global {
@@ -157,7 +159,7 @@ display_fatal_error(struct wl_display *display, int error)
 /**
  * This function is called for error events
  * and indicates that in some object an error occurred.
- * Difference between this function and display_fatal_error()
+ * The difference between this function and display_fatal_error()
  * is that this one handles errors that will come by wire,
  * whereas display_fatal_error() is called for local errors.
  *
@@ -176,7 +178,7 @@ display_protocol_error(struct wl_display *display, uint32_t code,
 		return;
 
 	/* set correct errno */
-	if (wl_interface_equal(intf, &wl_display_interface)) {
+	if (intf && wl_interface_equal(intf, &wl_display_interface)) {
 		switch (code) {
 		case WL_DISPLAY_ERROR_INVALID_OBJECT:
 		case WL_DISPLAY_ERROR_INVALID_METHOD:
@@ -251,9 +253,6 @@ decrease_closure_args_refcount(struct wl_closure *closure)
 	}
 }
 
-void
-proxy_destroy(struct wl_proxy *proxy);
-
 static void
 wl_event_queue_release(struct wl_event_queue *queue)
 {
@@ -309,7 +308,7 @@ wl_event_queue_destroy(struct wl_event_queue *queue)
  * \return A new event queue associated with this display or NULL on
  * failure.
  *
- * \memberof wl_event_queue
+ * \memberof wl_display
  */
 WL_EXPORT struct wl_event_queue *
 wl_display_create_queue(struct wl_display *display)
@@ -326,21 +325,21 @@ wl_display_create_queue(struct wl_display *display)
 }
 
 static struct wl_proxy *
-proxy_create(struct wl_proxy *factory, const struct wl_interface *interface)
+proxy_create(struct wl_proxy *factory, const struct wl_interface *interface,
+	     uint32_t version)
 {
 	struct wl_proxy *proxy;
 	struct wl_display *display = factory->display;
 
-	proxy = malloc(sizeof *proxy);
+	proxy = zalloc(sizeof *proxy);
 	if (proxy == NULL)
 		return NULL;
-
-	memset(proxy, 0, sizeof *proxy);
 
 	proxy->object.interface = interface;
 	proxy->display = display;
 	proxy->queue = factory->queue;
 	proxy->refcount = 1;
+	proxy->version = version;
 
 	proxy->object.id = wl_map_insert_new(&display->objects, 0, proxy);
 
@@ -373,7 +372,7 @@ wl_proxy_create(struct wl_proxy *factory, const struct wl_interface *interface)
 	struct wl_proxy *proxy;
 
 	pthread_mutex_lock(&display->mutex);
-	proxy = proxy_create(factory, interface);
+	proxy = proxy_create(factory, interface, factory->version);
 	pthread_mutex_unlock(&display->mutex);
 
 	return proxy;
@@ -387,24 +386,23 @@ wl_proxy_create_for_id(struct wl_proxy *factory,
 	struct wl_proxy *proxy;
 	struct wl_display *display = factory->display;
 
-	proxy = malloc(sizeof *proxy);
+	proxy = zalloc(sizeof *proxy);
 	if (proxy == NULL)
 		return NULL;
-
-	memset(proxy, 0, sizeof *proxy);
 
 	proxy->object.interface = interface;
 	proxy->object.id = id;
 	proxy->display = display;
 	proxy->queue = factory->queue;
 	proxy->refcount = 1;
+	proxy->version = factory->version;
 
 	wl_map_insert_at(&display->objects, 0, id, proxy);
 
 	return proxy;
 }
 
-void
+static void
 proxy_destroy(struct wl_proxy *proxy)
 {
 	if (proxy->flags & WL_PROXY_FLAG_ID_DELETED)
@@ -428,12 +426,17 @@ proxy_destroy(struct wl_proxy *proxy)
  *
  * \param proxy The proxy to be destroyed
  *
+ * \c proxy must not be a proxy wrapper.
+ *
  * \memberof wl_proxy
  */
 WL_EXPORT void
 wl_proxy_destroy(struct wl_proxy *proxy)
 {
 	struct wl_display *display = proxy->display;
+
+	if (proxy->flags & WL_PROXY_FLAG_WRAPPER)
+		wl_abort("Tried to destroy wrapper with wl_proxy_destroy()\n");
 
 	pthread_mutex_lock(&display->mutex);
 	proxy_destroy(proxy);
@@ -455,12 +458,17 @@ wl_proxy_destroy(struct wl_proxy *proxy)
  * \c n, \c implementation[n] should point to the handler of \c n for
  * the given object.
  *
+ * \c proxy must not be a proxy wrapper.
+ *
  * \memberof wl_proxy
  */
 WL_EXPORT int
 wl_proxy_add_listener(struct wl_proxy *proxy,
 		      void (**implementation)(void), void *data)
 {
+	if (proxy->flags & WL_PROXY_FLAG_WRAPPER)
+		wl_abort("Proxy %p is a wrapper\n", proxy);
+
 	if (proxy->object.implementation || proxy->dispatcher) {
 		wl_log("proxy %p already has listener\n", proxy);
 		return -1;
@@ -507,6 +515,8 @@ wl_proxy_get_listener(struct wl_proxy *proxy)
  * The exact details of dispatcher_data depend on the dispatcher used.  This
  * function is intended to be used by language bindings, not user code.
  *
+ * \c proxy must not be a proxy wrapper.
+ *
  * \memberof wl_proxy
  */
 WL_EXPORT int
@@ -514,8 +524,11 @@ wl_proxy_add_dispatcher(struct wl_proxy *proxy,
 			wl_dispatcher_func_t dispatcher,
 			const void *implementation, void *data)
 {
+	if (proxy->flags & WL_PROXY_FLAG_WRAPPER)
+		wl_abort("Proxy %p is a wrapper\n", proxy);
+
 	if (proxy->object.implementation || proxy->dispatcher) {
-		wl_log("proxy %p already has listener\n");
+		wl_log("proxy %p already has listener\n", proxy);
 		return -1;
 	}
 
@@ -529,7 +542,7 @@ wl_proxy_add_dispatcher(struct wl_proxy *proxy,
 static struct wl_proxy *
 create_outgoing_proxy(struct wl_proxy *proxy, const struct wl_message *message,
 		      union wl_argument *args,
-		      const struct wl_interface *interface)
+		      const struct wl_interface *interface, uint32_t version)
 {
 	int i, count;
 	const char *signature;
@@ -543,7 +556,7 @@ create_outgoing_proxy(struct wl_proxy *proxy, const struct wl_message *message,
 
 		switch (arg.type) {
 		case 'n':
-			new_proxy = proxy_create(proxy, interface);
+			new_proxy = proxy_create(proxy, interface, version);
 			if (new_proxy == NULL)
 				return NULL;
 
@@ -562,13 +575,14 @@ create_outgoing_proxy(struct wl_proxy *proxy, const struct wl_message *message,
  * \param args Extra arguments for the given request
  * \param interface The interface to use for the new proxy
  *
- * Translates the request given by opcode and the extra arguments into the
- * wire format and write it to the connection buffer.  This version takes an
- * array of the union type wl_argument.
+ * This function translates a request given an opcode, an interface and a
+ * wl_argument array to the wire format and writes it to the connection
+ * buffer.
  *
  * For new-id arguments, this function will allocate a new wl_proxy
  * and send the ID to the server.  The new wl_proxy will be returned
- * on success or NULL on errror with errno set accordingly.
+ * on success or NULL on error with errno set accordingly.  The newly
+ * created proxy will inherit their version from their parent.
  *
  * \note This is intended to be used by language bindings and not in
  * non-generated code.
@@ -582,6 +596,43 @@ wl_proxy_marshal_array_constructor(struct wl_proxy *proxy,
 				   uint32_t opcode, union wl_argument *args,
 				   const struct wl_interface *interface)
 {
+	return wl_proxy_marshal_array_constructor_versioned(proxy, opcode,
+							    args, interface,
+							    proxy->version);
+}
+
+
+/** Prepare a request to be sent to the compositor
+ *
+ * \param proxy The proxy object
+ * \param opcode Opcode of the request to be sent
+ * \param args Extra arguments for the given request
+ * \param interface The interface to use for the new proxy
+ * \param version The protocol object version for the new proxy
+ *
+ * Translates the request given by opcode and the extra arguments into the
+ * wire format and write it to the connection buffer.  This version takes an
+ * array of the union type wl_argument.
+ *
+ * For new-id arguments, this function will allocate a new wl_proxy
+ * and send the ID to the server.  The new wl_proxy will be returned
+ * on success or NULL on error with errno set accordingly.  The newly
+ * created proxy will have the version specified.
+ *
+ * \note This is intended to be used by language bindings and not in
+ * non-generated code.
+ *
+ * \sa wl_proxy_marshal()
+ *
+ * \memberof wl_proxy
+ */
+WL_EXPORT struct wl_proxy *
+wl_proxy_marshal_array_constructor_versioned(struct wl_proxy *proxy,
+					     uint32_t opcode,
+					     union wl_argument *args,
+					     const struct wl_interface *interface,
+					     uint32_t version)
+{
 	struct wl_closure *closure;
 	struct wl_proxy *new_proxy = NULL;
 	const struct wl_message *message;
@@ -591,24 +642,21 @@ wl_proxy_marshal_array_constructor(struct wl_proxy *proxy,
 	message = &proxy->object.interface->methods[opcode];
 	if (interface) {
 		new_proxy = create_outgoing_proxy(proxy, message,
-						  args, interface);
+						  args, interface,
+						  version);
 		if (new_proxy == NULL)
 			goto err_unlock;
 	}
 
 	closure = wl_closure_marshal(&proxy->object, opcode, args, message);
-	if (closure == NULL) {
-		wl_log("Error marshalling request: %m\n");
-		abort();
-	}
+	if (closure == NULL)
+		wl_abort("Error marshalling request: %s\n", strerror(errno));
 
 	if (debug_client)
 		wl_closure_print(closure, &proxy->object, true);
 
-	if (wl_closure_send(closure, proxy->display->connection)) {
-		wl_log("Error sending request: %m\n");
-		abort();
-	}
+	if (wl_closure_send(closure, proxy->display->connection))
+		wl_abort("Error sending request: %s\n", strerror(errno));
 
 	wl_closure_destroy(closure);
 
@@ -656,12 +704,15 @@ wl_proxy_marshal(struct wl_proxy *proxy, uint32_t opcode, ...)
  * \param ... Extra arguments for the given request
  * \return A new wl_proxy for the new_id argument or NULL on error
  *
- * Translates the request given by opcode and the extra arguments into the
- * wire format and write it to the connection buffer.
+ * This function translates a request given an opcode, an interface and extra
+ * arguments to the wire format and writes it to the connection buffer. The
+ * types of the extra arguments must correspond to the argument types of the
+ * method associated with the opcode in the interface.
  *
  * For new-id arguments, this function will allocate a new wl_proxy
  * and send the ID to the server.  The new wl_proxy will be returned
- * on success or NULL on errror with errno set accordingly.
+ * on success or NULL on error with errno set accordingly.  The newly
+ * created proxy will inherit their version from their parent.
  *
  * \note This should not normally be used by non-generated code.
  *
@@ -681,6 +732,46 @@ wl_proxy_marshal_constructor(struct wl_proxy *proxy, uint32_t opcode,
 
 	return wl_proxy_marshal_array_constructor(proxy, opcode,
 						  args, interface);
+}
+
+
+/** Prepare a request to be sent to the compositor
+ *
+ * \param proxy The proxy object
+ * \param opcode Opcode of the request to be sent
+ * \param interface The interface to use for the new proxy
+ * \param version The protocol object version of the new proxy
+ * \param ... Extra arguments for the given request
+ * \return A new wl_proxy for the new_id argument or NULL on error
+ *
+ * Translates the request given by opcode and the extra arguments into the
+ * wire format and write it to the connection buffer.
+ *
+ * For new-id arguments, this function will allocate a new wl_proxy
+ * and send the ID to the server.  The new wl_proxy will be returned
+ * on success or NULL on error with errno set accordingly.  The newly
+ * created proxy will have the version specified.
+ *
+ * \note This should not normally be used by non-generated code.
+ *
+ * \memberof wl_proxy
+ */
+WL_EXPORT struct wl_proxy *
+wl_proxy_marshal_constructor_versioned(struct wl_proxy *proxy, uint32_t opcode,
+				       const struct wl_interface *interface,
+				       uint32_t version, ...)
+{
+	union wl_argument args[WL_CLOSURE_MAX_ARGS];
+	va_list ap;
+
+	va_start(ap, version);
+	wl_argument_from_va_list(proxy->object.interface->methods[opcode].signature,
+				 args, WL_CLOSURE_MAX_ARGS, ap);
+	va_end(ap);
+
+	return wl_proxy_marshal_array_constructor_versioned(proxy, opcode,
+							    args, interface,
+							    version);
 }
 
 /** Prepare a request to be sent to the compositor
@@ -712,12 +803,26 @@ display_handle_error(void *data,
 		     uint32_t code, const char *message)
 {
 	struct wl_proxy *proxy = object;
+	uint32_t object_id;
+	const struct wl_interface *interface;
 
-	wl_log("%s@%u: error %d: %s\n",
-	       proxy->object.interface->name, proxy->object.id, code, message);
+	if (proxy) {
+		wl_log("%s@%u: error %d: %s\n",
+		       proxy->object.interface->name,
+		       proxy->object.id,
+		       code, message);
 
-	display_protocol_error(display, code, proxy->object.id,
-			       proxy->object.interface);
+		object_id = proxy->object.id;
+		interface = proxy->object.interface;
+	} else {
+		wl_log("[destroyed object]: error %d: %s\n",
+		       code, message);
+
+		object_id = 0;
+		interface = NULL;
+	}
+
+	display_protocol_error(display, code, object_id, interface);
 }
 
 static void
@@ -819,13 +924,11 @@ wl_display_connect_to_fd(int fd)
 	if (debug && (strstr(debug, "client") || strstr(debug, "1")))
 		debug_client = 1;
 
-	display = malloc(sizeof *display);
+	display = zalloc(sizeof *display);
 	if (display == NULL) {
 		close(fd);
 		return NULL;
 	}
-
-	memset(display, 0, sizeof *display);
 
 	display->fd = fd;
 	wl_map_init(&display->objects, WL_MAP_CLIENT_SIDE);
@@ -846,6 +949,25 @@ wl_display_connect_to_fd(int fd)
 	display->proxy.queue = &display->default_queue;
 	display->proxy.flags = 0;
 	display->proxy.refcount = 1;
+
+	/* We set this version to 0 for backwards compatibility.
+	 *
+	 * If a client is using old versions of protocol headers,
+	 * it will use unversioned API to create proxies.  Those
+	 * proxies will inherit this 0.
+	 *
+	 * A client could be passing these proxies into library
+	 * code newer than the headers that checks proxy
+	 * versions.  When the proxy version is reported as 0
+	 * the library will know that it can't reliably determine
+	 * the proxy version, and should do whatever fallback is
+	 * required.
+	 *
+	 * This trick forces wl_display to always report 0, but
+	 * since it's a special object that we can't bind
+	 * specific versions of anyway, this should be fine.
+	 */
+	display->proxy.version = 0;
 
 	display->connection = wl_connection_create(display->fd);
 	if (display->connection == NULL)
@@ -960,28 +1082,40 @@ static const struct wl_callback_listener sync_listener = {
  * \param queue The queue on which to run the roundtrip
  * \return The number of dispatched events on success or -1 on failure
  *
- * Blocks until the server processes all currently issued requests and
- * sends out pending events on the event queue.
+ * This function blocks until the server has processed all currently issued
+ * requests by sending a request to the display server and waiting for a
+ * reply before returning.
  *
- * \note This function uses wl_display_dispatch_queue() internally. If you
- * are using wl_display_read_events() from more threads, don't use this function
- * (or make sure that calling wl_display_roundtrip_queue() doesn't interfere
- * with calling wl_display_prepare_read() and wl_display_read_events())
+ * This function uses wl_display_dispatch_queue() internally. It is not allowed
+ * to call this function while the thread is being prepared for reading events,
+ * and doing so will cause a dead lock.
+ *
+ * \note This function may dispatch other events being received on the given
+ * queue.
  *
  * \sa wl_display_roundtrip()
- * \memberof wl_event_queue
+ * \memberof wl_display
  */
 WL_EXPORT int
 wl_display_roundtrip_queue(struct wl_display *display, struct wl_event_queue *queue)
 {
+	struct wl_display *display_wrapper;
 	struct wl_callback *callback;
 	int done, ret = 0;
 
 	done = 0;
-	callback = wl_display_sync(display);
+
+	display_wrapper = wl_proxy_create_wrapper(display);
+	if (!display_wrapper)
+		return -1;
+
+	wl_proxy_set_queue((struct wl_proxy *) display_wrapper, queue);
+	callback = wl_display_sync(display_wrapper);
+	wl_proxy_wrapper_destroy(display_wrapper);
+
 	if (callback == NULL)
 		return -1;
-	wl_proxy_set_queue((struct wl_proxy *) callback, queue);
+
 	wl_callback_add_listener(callback, &sync_listener, &done);
 	while (!done && ret >= 0)
 		ret = wl_display_dispatch_queue(display, queue);
@@ -997,13 +1131,16 @@ wl_display_roundtrip_queue(struct wl_display *display, struct wl_event_queue *qu
  * \param display The display context object
  * \return The number of dispatched events on success or -1 on failure
  *
- * Blocks until the server process all currently issued requests and
- * sends out pending events on the default event queue.
+ * This function blocks until the server has processed all currently issued
+ * requests by sending a request to the display server and waiting for a reply
+ * before returning.
  *
- * \note This function uses wl_display_dispatch_queue() internally. If you
- * are using wl_display_read_events() from more threads, don't use this function
- * (or make sure that calling wl_display_roundtrip() doesn't interfere
- * with calling wl_display_prepare_read() and wl_display_read_events())
+ * This function uses wl_display_dispatch_queue() internally. It is not allowed
+ * to call this function while the thread is being prepared for reading events,
+ * and doing so will cause a dead lock.
+ *
+ * \note This function may dispatch other events being received on the default
+ * queue.
  *
  * \memberof wl_display
  */
@@ -1248,58 +1385,29 @@ cancel_read(struct wl_display *display)
  * \return 0 on success or -1 on error.  In case of error errno will
  * be set accordingly
  *
- * This will read events from the file descriptor for the display.
- * This function does not dispatch events, it only reads and queues
- * events into their corresponding event queues. If no data is
- * available on the file descriptor, wl_display_read_events() returns
- * immediately. To dispatch events that may have been queued, call
+ * Calling this function will result in data available on the display file
+ * descriptor being read and read events will be queued on their corresponding
+ * event queues.
+ *
+ * Before calling this function, depending on what thread it is to be called
+ * from, wl_display_prepare_read_queue() or wl_display_prepare_read() needs to
+ * be called. See wl_display_prepare_read_queue() for more details.
+ *
+ * When being called at a point where other threads have been prepared to read
+ * (using wl_display_prepare_read_queue() or wl_display_prepare_read()) this
+ * function will sleep until all other prepared threads have either been
+ * cancelled (using wl_display_cancel_read()) or them self entered this
+ * function. The last thread that calls this function will then read and queue
+ * events on their corresponding event queues, and finally wake up all other
+ * wl_display_read_events() calls causing them to return.
+ *
+ * If a thread cancels a read preparation when all other threads that have
+ * prepared to read has either called wl_display_cancel_read() or
+ * wl_display_read_events(), all reader threads will return without having read
+ * any data.
+ *
+ * To dispatch events that may have been queued, call
  * wl_display_dispatch_pending() or wl_display_dispatch_queue_pending().
- *
- * Before calling this function, wl_display_prepare_read() must be
- * called first. When running in more threads (which is the usual
- * case, since we'd use wl_display_dispatch() otherwise), every thread
- * must call wl_display_prepare_read() before calling this function.
- *
- * After calling wl_display_prepare_read() there can be some extra code
- * before calling wl_display_read_events(), for example poll() or alike.
- * Example of code in a thread:
- *
- * \code
- *
- *   while (wl_display_prepare_read(display) < 0)
- *           wl_display_dispatch_pending(display);
- *   wl_display_flush(display);
- *
- *   ... some code ...
- *
- *   fds[0].fd = wl_display_get_fd(display);
- *   fds[0].events = POLLIN;
- *   poll(fds, 1, -1);
- *
- *   if (!everything_ok()) {
- *	wl_display_cancel_read(display);
- *	handle_error();
- *   }
- *
- *   if (wl_display_read_events(display) < 0)
- *	handle_error();
- *
- *   ...
- * \endcode
- *
- * After wl_display_prepare_read() succeeds, other threads that enter
- * wl_display_read_events() will sleep until the very last thread enters
- * it too or cancels. Therefore when the display fd becomes (or already
- * is) readable, wl_display_read_events() should be called as soon as
- * possible to unblock all threads. If wl_display_read_events() will not
- * be called, then wl_display_cancel_read() must be called instead to let
- * the other threads continue.
- *
- * This function must not be called simultaneously with wl_display_dispatch().
- * It may lead to deadlock. If programmer wants, for some reason, use
- * wl_display_dispatch() in one thread and wl_display_prepare_read() with
- * wl_display_read_events() in another, extra care must be taken to serialize
- * these calls, i. e. use mutexes or similar (on whole prepare + read sequence)
  *
  * \sa wl_display_prepare_read(), wl_display_cancel_read(),
  * wl_display_dispatch_pending(), wl_display_dispatch()
@@ -1359,20 +1467,59 @@ err:
 	return -1;
 }
 
-/** Prepare to read events from the display to this queue
+/** Prepare to read events from the display's file descriptor to a queue
  *
  * \param display The display context object
  * \param queue The event queue to use
  * \return 0 on success or -1 if event queue was not empty
  *
- * Atomically makes sure the queue is empty and stops any other thread
- * from placing events into this (or any) queue.  Caller must
- * eventually call either wl_display_cancel_read() or
- * wl_display_read_events(), usually after waiting for the
- * display fd to become ready for reading, to release the lock.
+ * This function (or wl_display_prepare_read()) must be called before reading
+ * from the file descriptor using wl_display_read_events(). Calling
+ * wl_display_prepare_read_queue() announces the calling thread's intention to
+ * read and ensures that until the thread is ready to read and calls
+ * wl_display_read_events(), no other thread will read from the file descriptor.
+ * This only succeeds if the event queue is empty, and if not -1 is returned and
+ * errno set to EAGAIN.
  *
- * \sa wl_display_prepare_read
- * \memberof wl_event_queue
+ * If a thread successfully calls wl_display_prepare_read_queue(), it must
+ * either call wl_display_read_events() when it's ready or cancel the read
+ * intention by calling wl_display_cancel_read().
+ *
+ * Use this function before polling on the display fd or integrate the fd into a
+ * toolkit event loop in a race-free way. A correct usage would be (with most
+ * error checking left out):
+ *
+ * \code
+ * while (wl_display_prepare_read_queue(display, queue) != 0)
+ *         wl_display_dispatch_queue_pending(display, queue);
+ * wl_display_flush(display);
+ *
+ * ret = poll(fds, nfds, -1);
+ * if (has_error(ret))
+ *         wl_display_cancel_read(display);
+ * else
+ *         wl_display_read_events(display);
+ *
+ * wl_display_dispatch_queue_pending(display, queue);
+ * \endcode
+ *
+ * Here we call wl_display_prepare_read_queue(), which ensures that between
+ * returning from that call and eventually calling wl_display_read_events(), no
+ * other thread will read from the fd and queue events in our queue. If the call
+ * to wl_display_prepare_read_queue() fails, we dispatch the pending events and
+ * try again until we're successful.
+ *
+ * The wl_display_prepare_read_queue() function doesn't acquire exclusive access
+ * to the display's fd. It only registers that the thread calling this function
+ * has intention to read from fd. When all registered readers call
+ * wl_display_read_events(), only one (at random) eventually reads and queues
+ * the events and the others are sleeping meanwhile. This way we avoid races and
+ * still can read from more threads.
+ *
+ * \sa wl_display_cancel_read(), wl_display_read_events(),
+ * wl_display_prepare_read()
+ *
+ * \memberof wl_display
  */
 WL_EXPORT int
 wl_display_prepare_read_queue(struct wl_display *display,
@@ -1400,79 +1547,10 @@ wl_display_prepare_read_queue(struct wl_display *display,
  * \param display The display context object
  * \return 0 on success or -1 if event queue was not empty
  *
- * This function must be called before reading from the file
- * descriptor using wl_display_read_events(). Calling
- * wl_display_prepare_read() announces the calling thread's intention
- * to read and ensures that until the thread is ready to read and
- * calls wl_display_read_events(), no other thread will read from the
- * file descriptor. This only succeeds if the event queue is empty
- * though, and if there are undispatched events in the queue, -1 is
- * returned and errno set to EAGAIN.
+ * This function does the same thing as wl_display_prepare_read_queue()
+ * with the default queue passed as the queue.
  *
- * If a thread successfully calls wl_display_prepare_read(), it must
- * either call wl_display_read_events() when it's ready or cancel the
- * read intention by calling wl_display_cancel_read().
- *
- * Use this function before polling on the display fd or to integrate
- * the fd into a toolkit event loop in a race-free way.
- * A correct usage would be (we left out most of error checking):
- *
- * \code
- * while (wl_display_prepare_read(display) != 0)
- *         wl_display_dispatch_pending(display);
- * wl_display_flush(display);
- *
- * ret = poll(fds, nfds, -1);
- * if (has_error(ret))
- *         wl_display_cancel_read(display);
- * else
- *         wl_display_read_events(display);
- *
- * wl_display_dispatch_pending(display);
- * \endcode
- *
- * Here we call wl_display_prepare_read(), which ensures that between
- * returning from that call and eventually calling
- * wl_display_read_events(), no other thread will read from the fd and
- * queue events in our queue. If the call to wl_display_prepare_read() fails,
- * we dispatch the pending events and try again until we're successful.
- *
- * When using wl_display_dispatch() we'd have something like:
- *
- * \code
- * wl_display_dispatch_pending(display);
- * wl_display_flush(display);
- * poll(fds, nfds, -1);
- * wl_display_dispatch(display);
- * \endcode
- *
- * This sequence in not thread-safe. The race is immediately after poll(),
- * where one thread could preempt and read events before the other thread calls
- * wl_display_dispatch(). This call now blocks and starves the other
- * fds in the event loop.
- *
- * Another race would be when using more event queues.
- * When one thread calls wl_display_dispatch(_queue)(), then it
- * reads all events from display's fd and queues them in appropriate
- * queues. Then it dispatches only its own queue and the other events
- * are sitting in their queues, waiting for dispatching. If that happens
- * before the other thread managed to call poll(), it will
- * block with events queued.
- *
- * wl_display_prepare_read() function doesn't acquire exclusive access
- * to the display's fd. It only registers that the thread calling this function
- * has intention to read from fd.
- * When all registered readers call wl_display_read_events(),
- * only one (at random) eventually reads and queues the events and the
- * others are sleeping meanwhile. This way we avoid races and still
- * can read from more threads.
- *
- * If the relevant queue is not the default queue, then
- * wl_display_prepare_read_queue() and wl_display_dispatch_queue_pending()
- * need to be used instead.
- *
- * \sa wl_display_cancel_read(), wl_display_read_events()
- *
+ * \sa wl_display_prepare_read_queue
  * \memberof wl_display
  */
 WL_EXPORT int
@@ -1503,25 +1581,48 @@ wl_display_cancel_read(struct wl_display *display)
 	pthread_mutex_unlock(&display->mutex);
 }
 
+static int
+wl_display_poll(struct wl_display *display, short int events)
+{
+	int ret;
+	struct pollfd pfd[1];
+
+	pfd[0].fd = display->fd;
+	pfd[0].events = events;
+	do {
+		ret = poll(pfd, 1, -1);
+	} while (ret == -1 && errno == EINTR);
+
+	return ret;
+}
+
 /** Dispatch events in an event queue
  *
  * \param display The display context object
  * \param queue The event queue to dispatch
  * \return The number of dispatched events on success or -1 on failure
  *
- * Dispatch all incoming events for objects assigned to the given
- * event queue. On failure -1 is returned and errno set appropriately.
+ * Dispatch events on the given event queue.
  *
- * The behaviour of this function is exactly the same as the behaviour of
- * wl_display_dispatch(), but it dispatches events on given queue,
- * not on the default queue.
+ * If the given event queue is empty, this function blocks until there are
+ * events to be read from the display fd. Events are read and queued on
+ * the appropriate event queues. Finally, events on given event queue are
+ * dispatched. On failure -1 is returned and errno set appropriately.
  *
- * This function blocks if there are no events to dispatch (if there are,
- * it only dispatches these events and returns immediately).
- * When this function returns after blocking, it means that it read events
- * from display's fd and queued them to appropriate queues.
- * If among the incoming events were some events assigned to the given queue,
- * they are dispatched by this moment.
+ * In a multi threaded environment, do not manually wait using poll() (or
+ * equivalent) before calling this function, as doing so might cause a dead
+ * lock. If external reliance on poll() (or equivalent) is required, see
+ * wl_display_prepare_read_queue() of how to do so.
+ *
+ * This function is thread safe as long as it dispatches the right queue on the
+ * right thread. It is also compatible with the multi thread event reading
+ * preparation API (see wl_display_prepare_read_queue()), and uses the
+ * equivalent functionality internally. It is not allowed to call this function
+ * while the thread is being prepared for reading events, and doing so will
+ * cause a dead lock.
+ *
+ * It can be used as a helper function to ease the procedure of reading and
+ * dispatching events.
  *
  * \note Since Wayland 1.5 the display has an extra queue
  * for its own events (i. e. delete_id). This queue is dispatched always,
@@ -1529,72 +1630,48 @@ wl_display_cancel_read(struct wl_display *display)
  * That means that this function can return non-0 value even when it
  * haven't dispatched any event for the given queue.
  *
- * This function has the same constrains for using in multi-threaded apps
- * as \ref wl_display_dispatch().
- *
  * \sa wl_display_dispatch(), wl_display_dispatch_pending(),
- * wl_display_dispatch_queue_pending()
+ * wl_display_dispatch_queue_pending(), wl_display_prepare_read_queue()
  *
- * \memberof wl_event_queue
+ * \memberof wl_display
  */
 WL_EXPORT int
 wl_display_dispatch_queue(struct wl_display *display,
 			  struct wl_event_queue *queue)
 {
-	struct pollfd pfd[2];
 	int ret;
 
-	pthread_mutex_lock(&display->mutex);
+	if (wl_display_prepare_read_queue(display, queue) == -1)
+		return wl_display_dispatch_queue_pending(display, queue);
 
-	ret = dispatch_queue(display, queue);
-	if (ret == -1)
-		goto err_unlock;
-	if (ret > 0) {
-		pthread_mutex_unlock(&display->mutex);
-		return ret;
+	while (true) {
+		ret = wl_display_flush(display);
+
+		if (ret != -1 || errno != EAGAIN)
+			break;
+
+		if (wl_display_poll(display, POLLOUT) == -1) {
+			wl_display_cancel_read(display);
+			return -1;
+		}
 	}
 
-	/* We ignore EPIPE here, so that we try to read events before
-	 * returning an error.  When the compositor sends an error it
-	 * will close the socket, and if we bail out here we don't get
-	 * a chance to process the error. */
-	ret = wl_connection_flush(display->connection);
-	if (ret < 0 && errno != EAGAIN && errno != EPIPE) {
-		display_fatal_error(display, errno);
-		goto err_unlock;
-	}
-
-	display->reader_count++;
-
-	pthread_mutex_unlock(&display->mutex);
-
-	pfd[0].fd = display->fd;
-	pfd[0].events = POLLIN;
-	do {
-		ret = poll(pfd, 1, -1);
-	} while (ret == -1 && errno == EINTR);
-
-	if (ret == -1) {
+	/* Don't stop if flushing hits an EPIPE; continue so we can read any
+	 * protocol error that may have triggered it. */
+	if (ret < 0 && errno != EPIPE) {
 		wl_display_cancel_read(display);
 		return -1;
 	}
 
-	pthread_mutex_lock(&display->mutex);
+	if (wl_display_poll(display, POLLIN) == -1) {
+		wl_display_cancel_read(display);
+		return -1;
+	}
 
-	if (read_events(display) == -1)
-		goto err_unlock;
+	if (wl_display_read_events(display) == -1)
+		return -1;
 
-	ret = dispatch_queue(display, queue);
-	if (ret == -1)
-		goto err_unlock;
-
-	pthread_mutex_unlock(&display->mutex);
-
-	return ret;
-
- err_unlock:
-	pthread_mutex_unlock(&display->mutex);
-	return -1;
+	return wl_display_dispatch_queue_pending(display, queue);
 }
 
 /** Dispatch pending events in an event queue
@@ -1607,7 +1684,7 @@ wl_display_dispatch_queue(struct wl_display *display,
  * event queue. On failure -1 is returned and errno set appropriately.
  * If there are no events queued, this function returns immediately.
  *
- * \memberof wl_event_queue
+ * \memberof wl_display
  * \since 1.0.2
  */
 WL_EXPORT int
@@ -1630,17 +1707,24 @@ wl_display_dispatch_queue_pending(struct wl_display *display,
  * \param display The display context object
  * \return The number of dispatched events on success or -1 on failure
  *
- * Dispatch the display's default event queue.
+ * Dispatch events on the default event queue.
  *
  * If the default event queue is empty, this function blocks until there are
  * events to be read from the display fd. Events are read and queued on
  * the appropriate event queues. Finally, events on the default event queue
- * are dispatched.
+ * are dispatched. On failure -1 is returned and errno set appropriately.
  *
- * In multi-threaded environment, programmer may want to use
- * wl_display_read_events(). However, use of wl_display_read_events()
- * must not be mixed with wl_display_dispatch(). See wl_display_read_events()
- * and wl_display_prepare_read() for more details.
+ * In a multi threaded environment, do not manually wait using poll() (or
+ * equivalent) before calling this function, as doing so might cause a dead
+ * lock. If external reliance on poll() (or equivalent) is required, see
+ * wl_display_prepare_read_queue() of how to do so.
+ *
+ * This function is thread safe as long as it dispatches the right queue on the
+ * right thread. It is also compatible with the multi thread event reading
+ * preparation API (see wl_display_prepare_read_queue()), and uses the
+ * equivalent functionality internally. It is not allowed to call this function
+ * while the thread is being prepared for reading events, and doing so will
+ * cause a dead lock.
  *
  * \note It is not possible to check if there are events on the queue
  * or not. For dispatching default queue events without blocking, see \ref
@@ -1665,28 +1749,6 @@ wl_display_dispatch(struct wl_display *display)
  * This function dispatches events on the main event queue. It does not
  * attempt to read the display fd and simply returns zero if the main
  * queue is empty, i.e., it doesn't block.
- *
- * This is necessary when a client's main loop wakes up on some fd other
- * than the display fd (network socket, timer fd, etc) and calls \ref
- * wl_display_dispatch_queue() from that callback. This may queue up
- * events in other queues while reading all data from the display fd.
- * When the main loop returns from the handler, the display fd
- * no longer has data, causing a call to \em poll(2) (or similar
- * functions) to block indefinitely, even though there are events ready
- * to dispatch.
- *
- * To proper integrate the wayland display fd into a main loop, the
- * client should always call wl_display_dispatch_pending() and then
- * \ref wl_display_flush() prior to going back to sleep. At that point,
- * the fd typically doesn't have data so attempting I/O could block, but
- * events queued up on the default queue should be dispatched.
- *
- * A real-world example is a main loop that wakes up on a timerfd (or a
- * sound card fd becoming writable, for example in a video player), which
- * then triggers GL rendering and eventually eglSwapBuffers().
- * eglSwapBuffers() may call wl_display_dispatch_queue() if it didn't
- * receive the frame event for the previous frame, and as such queue
- * events in the default queue.
  *
  * \sa wl_display_dispatch(), wl_display_dispatch_queue(),
  * wl_display_flush()
@@ -1730,10 +1792,12 @@ wl_display_get_error(struct wl_display *display)
 /** Retrieves the information about a protocol error:
  *
  * \param display    The Wayland display
- * \param interface  if not NULL, stores the interface where the error occurred
+ * \param interface  if not NULL, stores the interface where the error occurred,
+ *                   or NULL, if unknown.
  * \param id         if not NULL, stores the object id that generated
- *                   the error. There's no guarantee the object is
- *                   still valid; the client must know if it deleted the object.
+ *                   the error, or 0, if the object id is unknown. There's no
+ *                   guarantee the object is still valid; the client must know
+ *                   if it deleted the object.
  * \return           The error code as defined in the interface specification.
  *
  * \code
@@ -1775,10 +1839,10 @@ wl_display_get_protocol_error(struct wl_display *display,
  * \param display The display context object
  * \return The number of bytes sent on success or -1 on failure
  *
- * Send all buffered data on the client side to the server. Clients
- * should call this function before blocking. On success, the number
- * of bytes sent to the server is returned. On failure, this
- * function returns -1 and errno is set appropriately.
+ * Send all buffered data on the client side to the server. Clients should
+ * always call this function before blocking on input from the display fd.
+ * On success, the number of bytes sent to the server is returned. On
+ * failure, this function returns -1 and errno is set appropriately.
  *
  * wl_display_flush() never blocks.  It will write as much data as
  * possible, but if all data could not be written, errno will be set
@@ -1798,8 +1862,12 @@ wl_display_flush(struct wl_display *display)
 		errno = display->last_error;
 		ret = -1;
 	} else {
+		/* We don't make EPIPE a fatal error here, so that we may try to
+		 * read events after the failed flush. When the compositor sends
+		 * an error it will close the socket, and if we make EPIPE fatal
+		 * here we don't get a chance to process the error. */
 		ret = wl_connection_flush(display->connection);
-		if (ret < 0 && errno != EAGAIN)
+		if (ret < 0 && errno != EAGAIN && errno != EPIPE)
 			display_fatal_error(display, errno);
 	}
 
@@ -1835,6 +1903,28 @@ WL_EXPORT void *
 wl_proxy_get_user_data(struct wl_proxy *proxy)
 {
 	return proxy->user_data;
+}
+
+/** Get the protocol object version of a proxy object
+ *
+ * \param proxy The proxy object
+ * \return The protocol object version of the proxy or 0
+ *
+ * Gets the protocol object version of a proxy object, or 0
+ * if the proxy was created with unversioned API.
+ *
+ * A returned value of 0 means that no version information is
+ * available, so the caller must make safe assumptions about
+ * the object's real version.
+ *
+ * wl_display's version will always return 0.
+ *
+ * \memberof wl_proxy
+ */
+WL_EXPORT uint32_t
+wl_proxy_get_version(struct wl_proxy *proxy)
+{
+	return proxy->version;
 }
 
 /** Get the id of a proxy object
@@ -1885,6 +1975,98 @@ wl_proxy_set_queue(struct wl_proxy *proxy, struct wl_event_queue *queue)
 		proxy->queue = queue;
 	else
 		proxy->queue = &proxy->display->default_queue;
+}
+
+/** Create a proxy wrapper for making queue assignments thread-safe
+ *
+ * \param proxy The proxy object to be wrapped
+ * \return A proxy wrapper for the given proxy or NULL on failure
+ *
+ * A proxy wrapper is type of 'struct wl_proxy' instance that can be used when
+ * sending requests instead of using the original proxy. A proxy wrapper does
+ * not have an implementation or dispatcher, and events received on the
+ * object is still emitted on the original proxy. Trying to set an
+ * implementation or dispatcher will have no effect but result in a warning
+ * being logged.
+ *
+ * Setting the proxy queue of the proxy wrapper will make new objects created
+ * using the proxy wrapper use the set proxy queue.
+ * Even though there is no implementation nor dispatcher, the proxy queue can
+ * be changed. This will affect the default queue of new objects created by
+ * requests sent via the proxy wrapper.
+ *
+ * A proxy wrapper can only be destroyed using wl_proxy_wrapper_destroy().
+ *
+ * A proxy wrapper must be destroyed before the proxy it was created from.
+ *
+ * If a user reads and dispatches events on more than one thread, it is
+ * necessary to use a proxy wrapper when sending requests on objects when the
+ * intention is that a newly created proxy is to use a proxy queue different
+ * from the proxy the request was sent on, as creating the new proxy and then
+ * setting the queue is not thread safe.
+ *
+ * For example, a module that runs using its own proxy queue that needs to
+ * do display roundtrip must wrap the wl_display proxy object before sending
+ * the wl_display.sync request. For example:
+ *
+ * \code
+ *
+ *   struct wl_event_queue *queue = ...;
+ *   struct wl_display *wrapped_display;
+ *   struct wl_callback *callback;
+ *
+ *   wrapped_display = wl_proxy_create_wrapper(display);
+ *   wl_proxy_set_queue((struct wl_proxy *) wrapped_display, queue);
+ *   callback = wl_display_sync(wrapped_display);
+ *   wl_proxy_wrapper_destroy(wrapped_display);
+ *   wl_callback_add_listener(callback, ...);
+ *
+ * \endcode
+ *
+ * \memberof wl_proxy
+ */
+WL_EXPORT void *
+wl_proxy_create_wrapper(void *proxy)
+{
+	struct wl_proxy *wrapped_proxy = proxy;
+	struct wl_proxy *wrapper;
+
+	wrapper = zalloc(sizeof *wrapper);
+	if (!wrapper)
+		return NULL;
+
+	pthread_mutex_lock(&wrapped_proxy->display->mutex);
+
+	wrapper->object.interface = wrapped_proxy->object.interface;
+	wrapper->object.id = wrapped_proxy->object.id;
+	wrapper->version = wrapped_proxy->version;
+	wrapper->display = wrapped_proxy->display;
+	wrapper->queue = wrapped_proxy->queue;
+	wrapper->flags = WL_PROXY_FLAG_WRAPPER;
+	wrapper->refcount = 1;
+
+	pthread_mutex_unlock(&wrapped_proxy->display->mutex);
+
+	return wrapper;
+}
+
+/** Destroy a proxy wrapper
+ * \param proxy_wrapper The proxy wrapper to be destroyed
+ *
+ * \memberof wl_proxy
+ */
+WL_EXPORT void
+wl_proxy_wrapper_destroy(void *proxy_wrapper)
+{
+	struct wl_proxy *wrapper = proxy_wrapper;
+
+	if (!(wrapper->flags & WL_PROXY_FLAG_WRAPPER))
+		wl_abort("Tried to destroy non-wrapper proxy with "
+			 "wl_proxy_wrapper_destroy\n");
+
+	assert(wrapper->refcount == 1);
+
+	free(wrapper);
 }
 
 WL_EXPORT void

@@ -33,6 +33,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -40,6 +41,7 @@
 #include <signal.h>
 #include <pthread.h>
 
+#include "wayland-util.h"
 #include "wayland-private.h"
 #include "wayland-server.h"
 
@@ -52,9 +54,11 @@ static struct sigaction wl_shm_old_sigbus_action;
 
 struct wl_shm_pool {
 	struct wl_resource *resource;
-	int refcount;
+	int internal_refcount;
+	int external_refcount;
 	char *data;
 	int32_t size;
+	int32_t new_size;
 };
 
 struct wl_shm_buffer {
@@ -73,10 +77,37 @@ struct wl_shm_sigbus_data {
 };
 
 static void
-shm_pool_unref(struct wl_shm_pool *pool)
+shm_pool_finish_resize(struct wl_shm_pool *pool)
 {
-	pool->refcount--;
-	if (pool->refcount)
+	void *data;
+
+	if (pool->size == pool->new_size)
+		return;
+
+	data = mremap(pool->data, pool->size, pool->new_size, MREMAP_MAYMOVE);
+	if (data == MAP_FAILED) {
+		wl_resource_post_error(pool->resource,
+				       WL_SHM_ERROR_INVALID_FD,
+				       "failed mremap");
+		return;
+	}
+
+	pool->data = data;
+	pool->size = pool->new_size;
+}
+
+static void
+shm_pool_unref(struct wl_shm_pool *pool, bool external)
+{
+	if (external) {
+		pool->external_refcount--;
+		if (pool->external_refcount == 0)
+			shm_pool_finish_resize(pool);
+	} else {
+		pool->internal_refcount--;
+	}
+
+	if (pool->internal_refcount + pool->external_refcount)
 		return;
 
 	munmap(pool->data, pool->size);
@@ -89,7 +120,7 @@ destroy_buffer(struct wl_resource *resource)
 	struct wl_shm_buffer *buffer = wl_resource_get_user_data(resource);
 
 	if (buffer->pool)
-		shm_pool_unref(buffer->pool);
+		shm_pool_unref(buffer->pool, false);
 	free(buffer);
 }
 
@@ -117,7 +148,7 @@ format_is_supported(struct wl_client *client, uint32_t format)
 	default:
 		formats = wl_display_get_additional_shm_formats(display);
 		wl_array_for_each(p, formats)
-			if(*p == format)
+			if (*p == format)
 				return true;
 	}
 
@@ -162,13 +193,13 @@ shm_pool_create_buffer(struct wl_client *client, struct wl_resource *resource,
 	buffer->stride = stride;
 	buffer->offset = offset;
 	buffer->pool = pool;
-	pool->refcount++;
+	pool->internal_refcount++;
 
 	buffer->resource =
 		wl_resource_create(client, &wl_buffer_interface, 1, id);
 	if (buffer->resource == NULL) {
 		wl_client_post_no_memory(client);
-		shm_pool_unref(pool);
+		shm_pool_unref(pool, false);
 		free(buffer);
 		return;
 	}
@@ -183,7 +214,7 @@ destroy_pool(struct wl_resource *resource)
 {
 	struct wl_shm_pool *pool = wl_resource_get_user_data(resource);
 
-	shm_pool_unref(pool);
+	shm_pool_unref(pool, false);
 }
 
 static void
@@ -197,7 +228,6 @@ shm_pool_resize(struct wl_client *client, struct wl_resource *resource,
 		int32_t size)
 {
 	struct wl_shm_pool *pool = wl_resource_get_user_data(resource);
-	void *data;
 
 	if (size < pool->size) {
 		wl_resource_post_error(resource,
@@ -206,16 +236,15 @@ shm_pool_resize(struct wl_client *client, struct wl_resource *resource,
 		return;
 	}
 
-	data = mremap(pool->data, pool->size, size, MREMAP_MAYMOVE);
-	if (data == MAP_FAILED) {
-		wl_resource_post_error(resource,
-				       WL_SHM_ERROR_INVALID_FD,
-				       "failed mremap");
-		return;
-	}
+	pool->new_size = size;
 
-	pool->data = data;
-	pool->size = size;
+	/* If the compositor has taken references on this pool it
+	 * may be caching pointers into it. In that case we
+	 * defer the resize (which may move the entire mapping)
+	 * until the compositor finishes dereferencing the pool.
+	 */
+	if (pool->external_refcount == 0)
+		shm_pool_finish_resize(pool);
 }
 
 struct wl_shm_pool_interface shm_pool_interface = {
@@ -230,28 +259,30 @@ shm_create_pool(struct wl_client *client, struct wl_resource *resource,
 {
 	struct wl_shm_pool *pool;
 
+	if (size <= 0) {
+		wl_resource_post_error(resource,
+				       WL_SHM_ERROR_INVALID_STRIDE,
+				       "invalid size (%d)", size);
+		goto err_close;
+	}
+
 	pool = malloc(sizeof *pool);
 	if (pool == NULL) {
 		wl_client_post_no_memory(client);
 		goto err_close;
 	}
 
-	if (size <= 0) {
-		wl_resource_post_error(resource,
-				       WL_SHM_ERROR_INVALID_STRIDE,
-				       "invalid size (%d)", size);
-		goto err_free;
-	}
-
-	pool->refcount = 1;
+	pool->internal_refcount = 1;
+	pool->external_refcount = 0;
 	pool->size = size;
+	pool->new_size = size;
 	pool->data = mmap(NULL, size,
 			  PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	if (pool->data == MAP_FAILED) {
 		wl_resource_post_error(resource,
 				       WL_SHM_ERROR_INVALID_FD,
 				       "failed mmap fd %d", fd);
-		goto err_close;
+		goto err_free;
 	}
 	close(fd);
 
@@ -270,10 +301,10 @@ shm_create_pool(struct wl_client *client, struct wl_resource *resource,
 
 	return;
 
-err_close:
-	close(fd);
 err_free:
 	free(pool);
+err_close:
+	close(fd);
 }
 
 static const struct wl_shm_interface shm_interface = {
@@ -315,41 +346,6 @@ wl_display_init_shm(struct wl_display *display)
 }
 
 WL_EXPORT struct wl_shm_buffer *
-wl_shm_buffer_create(struct wl_client *client,
-		     uint32_t id, int32_t width, int32_t height,
-		     int32_t stride, uint32_t format)
-{
-	struct wl_shm_buffer *buffer;
-
-	if (!format_is_supported(client, format))
-		return NULL;
-
-	buffer = malloc(sizeof *buffer + stride * height);
-	if (buffer == NULL)
-		return NULL;
-
-	buffer->width = width;
-	buffer->height = height;
-	buffer->format = format;
-	buffer->stride = stride;
-	buffer->offset = 0;
-	buffer->pool = NULL;
-
-	buffer->resource =
-		wl_resource_create(client, &wl_buffer_interface, 1, id);
-	if (buffer->resource == NULL) {
-		free(buffer);
-		return NULL;
-	}
-
-	wl_resource_set_implementation(buffer->resource,
-				       &shm_buffer_interface,
-				       buffer, destroy_buffer);
-
-	return buffer;
-}
-
-WL_EXPORT struct wl_shm_buffer *
 wl_shm_buffer_get(struct wl_resource *resource)
 {
 	if (resource == NULL)
@@ -388,10 +384,17 @@ wl_shm_buffer_get_stride(struct wl_shm_buffer *buffer)
 WL_EXPORT void *
 wl_shm_buffer_get_data(struct wl_shm_buffer *buffer)
 {
-	if (buffer->pool)
-		return buffer->pool->data + buffer->offset;
-	else
-		return buffer + 1;
+	assert(buffer->pool);
+
+	if (!buffer->pool)
+		return NULL;
+
+	if (buffer->pool->external_refcount &&
+	    (buffer->pool->size != buffer->pool->new_size))
+		wl_log("Buffer address requested when its parent pool "
+		       "has an external reference and a deferred resize "
+		       "pending.\n");
+	return buffer->pool->data + buffer->offset;
 }
 
 WL_EXPORT uint32_t
@@ -410,6 +413,49 @@ WL_EXPORT int32_t
 wl_shm_buffer_get_height(struct wl_shm_buffer *buffer)
 {
 	return buffer->height;
+}
+
+/** Get a reference to a shm_buffer's shm_pool
+ *
+ * \param buffer The buffer object
+ *
+ * Returns a pointer to a buffer's shm_pool and increases the
+ * shm_pool refcount.
+ *
+ * The compositor must remember to call wl_shm_pool_unref when
+ * it no longer needs the reference to ensure proper destruction
+ * of the pool.
+ *
+ * \memberof wl_shm_buffer
+ * \sa wl_shm_pool_unref
+ */
+WL_EXPORT struct wl_shm_pool *
+wl_shm_buffer_ref_pool(struct wl_shm_buffer *buffer)
+{
+	assert(buffer->pool->internal_refcount +
+	       buffer->pool->external_refcount);
+
+	buffer->pool->external_refcount++;
+	return buffer->pool;
+}
+
+/** Unreference a shm_pool
+ *
+ * \param pool The pool object
+ *
+ * Drops a reference to a wl_shm_pool object.
+ *
+ * This is only necessary if the compositor has explicitly
+ * taken a reference with wl_shm_buffer_ref_pool(), otherwise
+ * the pool will be automatically destroyed when appropriate.
+ *
+ * \memberof wl_shm_pool
+ * \sa wl_shm_buffer_ref_pool
+ */
+WL_EXPORT void
+wl_shm_pool_unref(struct wl_shm_pool *pool)
+{
+	shm_pool_unref(pool, true);
 }
 
 static void
@@ -527,11 +573,9 @@ wl_shm_buffer_begin_access(struct wl_shm_buffer *buffer)
 
 	sigbus_data = pthread_getspecific(wl_shm_sigbus_data_key);
 	if (sigbus_data == NULL) {
-		sigbus_data = malloc(sizeof *sigbus_data);
+		sigbus_data = zalloc(sizeof *sigbus_data);
 		if (sigbus_data == NULL)
 			return;
-
-		memset(sigbus_data, 0, sizeof *sigbus_data);
 
 		pthread_setspecific(wl_shm_sigbus_data_key, sigbus_data);
 	}
@@ -573,3 +617,20 @@ wl_shm_buffer_end_access(struct wl_shm_buffer *buffer)
 		sigbus_data->current_pool = NULL;
 	}
 }
+
+/** \cond */ /* Deprecated functions below. */
+
+WL_EXPORT struct wl_shm_buffer *
+wl_shm_buffer_create(struct wl_client *client,
+		     uint32_t id, int32_t width, int32_t height,
+		     int32_t stride, uint32_t format)
+{
+	return NULL;
+}
+
+/** \endcond */
+
+/* Functions at the end of this file are deprecated.  Instead of adding new
+ * code here, add it before the comment above that states:
+ * Deprecated functions below.
+ */

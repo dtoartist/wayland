@@ -1,0 +1,50 @@
+.TH "wl_interface" 3 "Tue Sep 20 2016" "Version 1.12.0" "Wayland" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+wl_interface \- 
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <wayland-util\&.h>\fP
+.SS "Data Fields"
+
+.in +1c
+.ti -1c
+.RI "const char * \fBname\fP"
+.br
+.ti -1c
+.RI "int \fBversion\fP"
+.br
+.ti -1c
+.RI "int \fBmethod_count\fP"
+.br
+.ti -1c
+.RI "const struct \fBwl_message\fP * \fBmethods\fP"
+.br
+.ti -1c
+.RI "int \fBevent_count\fP"
+.br
+.ti -1c
+.RI "const struct \fBwl_message\fP * \fBevents\fP"
+.br
+.in -1c
+.SH "Field Documentation"
+.PP 
+.SS "int wl_interface::event_count"
+
+.SS "const struct \fBwl_message\fP* wl_interface::events"
+
+.SS "int wl_interface::method_count"
+
+.SS "const struct \fBwl_message\fP* wl_interface::methods"
+
+.SS "const char* wl_interface::name"
+
+.SS "int wl_interface::version"
+
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Wayland from the source code\&.

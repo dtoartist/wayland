@@ -82,8 +82,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = wayland-scanner$(EXEEXT)
-@ENABLE_LIBRARIES_TRUE@am__append_1 = libwayland-private.la
-@ENABLE_LIBRARIES_TRUE@am__append_2 = src/wayland-client.pc \
+@DTD_VALIDATION_TRUE@am__append_1 = src/dtddata.S
+@ENABLE_LIBRARIES_TRUE@am__append_2 = libwayland-private.la
+@ENABLE_LIBRARIES_TRUE@am__append_3 = src/wayland-client.pc \
 @ENABLE_LIBRARIES_TRUE@	src/wayland-server.pc \
 @ENABLE_LIBRARIES_TRUE@	cursor/wayland-cursor.pc
 @ENABLE_LIBRARIES_TRUE@TESTS = array-test$(EXEEXT) \
@@ -100,8 +101,11 @@ bin_PROGRAMS = wayland-scanner$(EXEEXT)
 @ENABLE_LIBRARIES_TRUE@	signal-test$(EXEEXT) \
 @ENABLE_LIBRARIES_TRUE@	resources-test$(EXEEXT) \
 @ENABLE_LIBRARIES_TRUE@	message-test$(EXEEXT) \
-@ENABLE_LIBRARIES_TRUE@	headers-test$(EXEEXT) $(am__EXEEXT_1)
-@ENABLE_CPP_TEST_TRUE@@ENABLE_LIBRARIES_TRUE@am__append_3 = cpp-compile-test
+@ENABLE_LIBRARIES_TRUE@	headers-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	compositor-introspection-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	protocol-logger-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	$(am__EXEEXT_1)
+@ENABLE_CPP_TEST_TRUE@@ENABLE_LIBRARIES_TRUE@am__append_4 = cpp-compile-test
 @ENABLE_LIBRARIES_TRUE@check_PROGRAMS = $(am__EXEEXT_2) \
 @ENABLE_LIBRARIES_TRUE@	exec-fd-leak-checker$(EXEEXT)
 @ENABLE_LIBRARIES_TRUE@noinst_PROGRAMS = fixed-benchmark$(EXEEXT)
@@ -117,7 +121,8 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/src/wayland-server.pc.in \
 	$(top_srcdir)/src/wayland-client.pc.in \
 	$(top_srcdir)/src/wayland-scanner.pc.in \
-	$(top_srcdir)/src/wayland-version.h.in depcomp \
+	$(top_srcdir)/src/wayland-version.h.in \
+	$(top_srcdir)/protocol/wayland.dtd depcomp \
 	$(dist_aclocal_DATA) $(dist_pkgdata_DATA) \
 	$(am__include_HEADERS_DIST) test-driver COPYING README TODO \
 	compile config.guess config.sub install-sh missing ltmain.sh
@@ -138,7 +143,7 @@ CONFIG_CLEAN_FILES = cursor/wayland-cursor.pc \
 	src/wayland-client-uninstalled.pc \
 	src/wayland-scanner-uninstalled.pc src/wayland-server.pc \
 	src/wayland-client.pc src/wayland-scanner.pc \
-	src/wayland-version.h
+	src/wayland-version.h src/wayland.dtd.embed
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -274,7 +279,10 @@ libwayland_util_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @ENABLE_LIBRARIES_TRUE@	signal-test$(EXEEXT) \
 @ENABLE_LIBRARIES_TRUE@	resources-test$(EXEEXT) \
 @ENABLE_LIBRARIES_TRUE@	message-test$(EXEEXT) \
-@ENABLE_LIBRARIES_TRUE@	headers-test$(EXEEXT) $(am__EXEEXT_1)
+@ENABLE_LIBRARIES_TRUE@	headers-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	compositor-introspection-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	protocol-logger-test$(EXEEXT) \
+@ENABLE_LIBRARIES_TRUE@	$(am__EXEEXT_1)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__array_test_SOURCES_DIST = tests/array-test.c
 @ENABLE_LIBRARIES_TRUE@am_array_test_OBJECTS =  \
@@ -286,6 +294,13 @@ am__client_test_SOURCES_DIST = tests/client-test.c
 @ENABLE_LIBRARIES_TRUE@	tests/client-test.$(OBJEXT)
 client_test_OBJECTS = $(am_client_test_OBJECTS)
 @ENABLE_LIBRARIES_TRUE@client_test_DEPENDENCIES = libtest-runner.la
+am__compositor_introspection_test_SOURCES_DIST =  \
+	tests/compositor-introspection-test.c
+@ENABLE_LIBRARIES_TRUE@am_compositor_introspection_test_OBJECTS = tests/compositor-introspection-test.$(OBJEXT)
+compositor_introspection_test_OBJECTS =  \
+	$(am_compositor_introspection_test_OBJECTS)
+@ENABLE_LIBRARIES_TRUE@compositor_introspection_test_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libtest-runner.la
 am__connection_test_SOURCES_DIST = tests/connection-test.c
 @ENABLE_LIBRARIES_TRUE@am_connection_test_OBJECTS =  \
 @ENABLE_LIBRARIES_TRUE@	tests/connection-test.$(OBJEXT)
@@ -355,6 +370,12 @@ am__os_wrappers_test_SOURCES_DIST = tests/os-wrappers-test.c
 os_wrappers_test_OBJECTS = $(am_os_wrappers_test_OBJECTS)
 @ENABLE_LIBRARIES_TRUE@os_wrappers_test_DEPENDENCIES =  \
 @ENABLE_LIBRARIES_TRUE@	libtest-runner.la
+am__protocol_logger_test_SOURCES_DIST = tests/protocol-logger-test.c
+@ENABLE_LIBRARIES_TRUE@am_protocol_logger_test_OBJECTS =  \
+@ENABLE_LIBRARIES_TRUE@	tests/protocol-logger-test.$(OBJEXT)
+protocol_logger_test_OBJECTS = $(am_protocol_logger_test_OBJECTS)
+@ENABLE_LIBRARIES_TRUE@protocol_logger_test_DEPENDENCIES =  \
+@ENABLE_LIBRARIES_TRUE@	libtest-runner.la
 am__queue_test_SOURCES_DIST = tests/queue-test.c
 @ENABLE_LIBRARIES_TRUE@am_queue_test_OBJECTS =  \
 @ENABLE_LIBRARIES_TRUE@	tests/queue-test.$(OBJEXT)
@@ -381,10 +402,13 @@ am__socket_test_SOURCES_DIST = tests/socket-test.c
 @ENABLE_LIBRARIES_TRUE@	tests/socket-test.$(OBJEXT)
 socket_test_OBJECTS = $(am_socket_test_OBJECTS)
 @ENABLE_LIBRARIES_TRUE@socket_test_DEPENDENCIES = libtest-runner.la
-am_wayland_scanner_OBJECTS = src/wayland_scanner-scanner.$(OBJEXT)
+am__wayland_scanner_SOURCES_DIST = src/scanner.c src/dtddata.S
+@DTD_VALIDATION_TRUE@am__objects_1 = src/dtddata.$(OBJEXT)
+am_wayland_scanner_OBJECTS = src/wayland_scanner-scanner.$(OBJEXT) \
+	$(am__objects_1)
 wayland_scanner_OBJECTS = $(am_wayland_scanner_OBJECTS)
 wayland_scanner_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	libwayland-util.la
+	$(am__DEPENDENCIES_1) libwayland-util.la
 wayland_scanner_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(wayland_scanner_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -405,6 +429,16 @@ DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
+CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
+LTCPPASCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CCASFLAGS) $(CCASFLAGS)
+AM_V_CPPAS = $(am__v_CPPAS_@AM_V@)
+am__v_CPPAS_ = $(am__v_CPPAS_@AM_DEFAULT_V@)
+am__v_CPPAS_0 = @echo "  CPPAS   " $@;
+am__v_CPPAS_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -448,13 +482,15 @@ SOURCES = $(libtest_runner_la_SOURCES) $(libwayland_client_la_SOURCES) \
 	$(libwayland_server_la_SOURCES) \
 	$(nodist_libwayland_server_la_SOURCES) \
 	$(libwayland_util_la_SOURCES) $(array_test_SOURCES) \
-	$(client_test_SOURCES) $(connection_test_SOURCES) \
-	$(cpp_compile_test_SOURCES) $(display_test_SOURCES) \
-	$(event_loop_test_SOURCES) $(exec_fd_leak_checker_SOURCES) \
-	$(fixed_benchmark_SOURCES) $(fixed_test_SOURCES) \
-	$(headers_test_SOURCES) $(nodist_headers_test_SOURCES) \
-	$(list_test_SOURCES) $(map_test_SOURCES) \
-	$(message_test_SOURCES) $(os_wrappers_test_SOURCES) \
+	$(client_test_SOURCES) \
+	$(compositor_introspection_test_SOURCES) \
+	$(connection_test_SOURCES) $(cpp_compile_test_SOURCES) \
+	$(display_test_SOURCES) $(event_loop_test_SOURCES) \
+	$(exec_fd_leak_checker_SOURCES) $(fixed_benchmark_SOURCES) \
+	$(fixed_test_SOURCES) $(headers_test_SOURCES) \
+	$(nodist_headers_test_SOURCES) $(list_test_SOURCES) \
+	$(map_test_SOURCES) $(message_test_SOURCES) \
+	$(os_wrappers_test_SOURCES) $(protocol_logger_test_SOURCES) \
 	$(queue_test_SOURCES) $(resources_test_SOURCES) \
 	$(sanity_test_SOURCES) $(signal_test_SOURCES) \
 	$(socket_test_SOURCES) $(wayland_scanner_SOURCES)
@@ -465,6 +501,7 @@ DIST_SOURCES = $(am__libtest_runner_la_SOURCES_DIST) \
 	$(am__libwayland_server_la_SOURCES_DIST) \
 	$(libwayland_util_la_SOURCES) $(am__array_test_SOURCES_DIST) \
 	$(am__client_test_SOURCES_DIST) \
+	$(am__compositor_introspection_test_SOURCES_DIST) \
 	$(am__connection_test_SOURCES_DIST) \
 	$(am__cpp_compile_test_SOURCES_DIST) \
 	$(am__display_test_SOURCES_DIST) \
@@ -475,11 +512,13 @@ DIST_SOURCES = $(am__libtest_runner_la_SOURCES_DIST) \
 	$(am__headers_test_SOURCES_DIST) $(am__list_test_SOURCES_DIST) \
 	$(am__map_test_SOURCES_DIST) $(am__message_test_SOURCES_DIST) \
 	$(am__os_wrappers_test_SOURCES_DIST) \
+	$(am__protocol_logger_test_SOURCES_DIST) \
 	$(am__queue_test_SOURCES_DIST) \
 	$(am__resources_test_SOURCES_DIST) \
 	$(am__sanity_test_SOURCES_DIST) \
 	$(am__signal_test_SOURCES_DIST) \
-	$(am__socket_test_SOURCES_DIST) $(wayland_scanner_SOURCES)
+	$(am__socket_test_SOURCES_DIST) \
+	$(am__wayland_scanner_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -757,6 +796,9 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
+CCAS = @CCAS@
+CCASDEPMODE = @CCASDEPMODE@
+CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
@@ -796,6 +838,8 @@ LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
+LIBXML_CFLAGS = @LIBXML_CFLAGS@
+LIBXML_LIBS = @LIBXML_LIBS@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
@@ -901,10 +945,10 @@ dist_pkgdata_DATA = \
 	protocol/wayland.dtd
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = src/wayland-scanner.pc $(am__append_2)
-wayland_scanner_SOURCES = src/scanner.c
-wayland_scanner_CFLAGS = $(EXPAT_CFLAGS) $(AM_CFLAGS)
-wayland_scanner_LDADD = $(EXPAT_LIBS) libwayland-util.la
+pkgconfig_DATA = src/wayland-scanner.pc $(am__append_3)
+wayland_scanner_SOURCES = src/scanner.c $(am__append_1)
+wayland_scanner_CFLAGS = $(EXPAT_CFLAGS) $(LIBXML_CFLAGS) $(AM_CFLAGS)
+wayland_scanner_LDADD = $(EXPAT_LIBS) $(LIBXML_LIBS) libwayland-util.la
 @USE_HOST_SCANNER_FALSE@wayland_scanner = $(top_builddir)/wayland-scanner
 @USE_HOST_SCANNER_TRUE@wayland_scanner = wayland-scanner
 libwayland_util_la_CFLAGS = $(AM_CFLAGS)
@@ -912,7 +956,7 @@ libwayland_util_la_SOURCES = \
 	src/wayland-util.c			\
 	src/wayland-util.h
 
-noinst_LTLIBRARIES = libwayland-util.la $(am__append_1)
+noinst_LTLIBRARIES = libwayland-util.la $(am__append_2)
 @ENABLE_LIBRARIES_TRUE@lib_LTLIBRARIES = libwayland-server.la \
 @ENABLE_LIBRARIES_TRUE@	libwayland-client.la \
 @ENABLE_LIBRARIES_TRUE@	libwayland-cursor.la
@@ -1024,6 +1068,10 @@ noinst_LTLIBRARIES = libwayland-util.la $(am__append_1)
 @ENABLE_LIBRARIES_TRUE@resources_test_LDADD = libtest-runner.la
 @ENABLE_LIBRARIES_TRUE@message_test_SOURCES = tests/message-test.c
 @ENABLE_LIBRARIES_TRUE@message_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@compositor_introspection_test_SOURCES = tests/compositor-introspection-test.c
+@ENABLE_LIBRARIES_TRUE@compositor_introspection_test_LDADD = libtest-runner.la
+@ENABLE_LIBRARIES_TRUE@protocol_logger_test_SOURCES = tests/protocol-logger-test.c
+@ENABLE_LIBRARIES_TRUE@protocol_logger_test_LDADD = libtest-runner.la
 @ENABLE_LIBRARIES_TRUE@headers_test_SOURCES = tests/headers-test.c \
 @ENABLE_LIBRARIES_TRUE@		       tests/headers-protocol-test.c \
 @ENABLE_LIBRARIES_TRUE@		       tests/headers-protocol-core-test.c
@@ -1044,7 +1092,7 @@ all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .c .cpp .lo .log .o .obj .test .test$(EXEEXT) .trs
+.SUFFIXES: .S .c .cpp .lo .log .o .obj .test .test$(EXEEXT) .trs
 am--refresh: Makefile
 	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -1320,6 +1368,12 @@ tests/client-test.$(OBJEXT): tests/$(am__dirstamp) \
 client-test$(EXEEXT): $(client_test_OBJECTS) $(client_test_DEPENDENCIES) $(EXTRA_client_test_DEPENDENCIES) 
 	@rm -f client-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(client_test_OBJECTS) $(client_test_LDADD) $(LIBS)
+tests/compositor-introspection-test.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+
+compositor-introspection-test$(EXEEXT): $(compositor_introspection_test_OBJECTS) $(compositor_introspection_test_DEPENDENCIES) $(EXTRA_compositor_introspection_test_DEPENDENCIES) 
+	@rm -f compositor-introspection-test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(compositor_introspection_test_OBJECTS) $(compositor_introspection_test_LDADD) $(LIBS)
 tests/connection-test.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 
@@ -1396,6 +1450,12 @@ tests/os-wrappers-test.$(OBJEXT): tests/$(am__dirstamp) \
 os-wrappers-test$(EXEEXT): $(os_wrappers_test_OBJECTS) $(os_wrappers_test_DEPENDENCIES) $(EXTRA_os_wrappers_test_DEPENDENCIES) 
 	@rm -f os-wrappers-test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(os_wrappers_test_OBJECTS) $(os_wrappers_test_LDADD) $(LIBS)
+tests/protocol-logger-test.$(OBJEXT): tests/$(am__dirstamp) \
+	tests/$(DEPDIR)/$(am__dirstamp)
+
+protocol-logger-test$(EXEEXT): $(protocol_logger_test_OBJECTS) $(protocol_logger_test_DEPENDENCIES) $(EXTRA_protocol_logger_test_DEPENDENCIES) 
+	@rm -f protocol-logger-test$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(protocol_logger_test_OBJECTS) $(protocol_logger_test_LDADD) $(LIBS)
 tests/queue-test.$(OBJEXT): tests/$(am__dirstamp) \
 	tests/$(DEPDIR)/$(am__dirstamp)
 
@@ -1428,6 +1488,8 @@ socket-test$(EXEEXT): $(socket_test_OBJECTS) $(socket_test_DEPENDENCIES) $(EXTRA
 	$(AM_V_CCLD)$(LINK) $(socket_test_OBJECTS) $(socket_test_LDADD) $(LIBS)
 src/wayland_scanner-scanner.$(OBJEXT): src/$(am__dirstamp) \
 	src/$(DEPDIR)/$(am__dirstamp)
+src/dtddata.$(OBJEXT): src/$(am__dirstamp) \
+	src/$(DEPDIR)/$(am__dirstamp)
 
 wayland-scanner$(EXEEXT): $(wayland_scanner_OBJECTS) $(wayland_scanner_DEPENDENCIES) $(EXTRA_wayland_scanner_DEPENDENCIES) 
 	@rm -f wayland-scanner$(EXEEXT)
@@ -1452,6 +1514,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@cursor/$(DEPDIR)/libwayland_cursor_la-xcursor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@protocol/$(DEPDIR)/libwayland_client_la-wayland-protocol.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@protocol/$(DEPDIR)/libwayland_server_la-wayland-protocol.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/dtddata.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_client_la-wayland-client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_private_la-connection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/libwayland_private_la-wayland-os.Plo@am__quote@
@@ -1462,6 +1525,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@src/$(DEPDIR)/wayland_scanner-scanner.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/array-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/client-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/compositor-introspection-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/connection-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/cpp-compile-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/display-test.Po@am__quote@
@@ -1476,6 +1540,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/map-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/message-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/os-wrappers-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/protocol-logger-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/queue-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/resources-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/sanity-test.Po@am__quote@
@@ -1484,6 +1549,30 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test-compositor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test-helpers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/test-runner.Plo@am__quote@
+
+.S.o:
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCCAS_TRUE@	$(CPPASCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCCAS_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(CPPASCOMPILE) -c -o $@ $<
+
+.S.obj:
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCCAS_TRUE@	$(CPPASCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCCAS_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(CPPASCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.S.lo:
+@am__fastdepCCAS_TRUE@	$(AM_V_CPPAS)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCCAS_TRUE@	$(LTCPPASCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCCAS_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCCAS_FALSE@	DEPDIR=$(DEPDIR) $(CCASDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCCAS_FALSE@	$(AM_V_CPPAS@am__nodep@)$(LTCPPASCOMPILE) -c -o $@ $<
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -2108,6 +2197,20 @@ headers-test.log: headers-test$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+compositor-introspection-test.log: compositor-introspection-test$(EXEEXT)
+	@p='compositor-introspection-test$(EXEEXT)'; \
+	b='compositor-introspection-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+protocol-logger-test.log: protocol-logger-test$(EXEEXT)
+	@p='protocol-logger-test$(EXEEXT)'; \
+	b='protocol-logger-test'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 cpp-compile-test.log: cpp-compile-test$(EXEEXT)
 	@p='cpp-compile-test$(EXEEXT)'; \
 	b='cpp-compile-test'; \
@@ -2486,6 +2589,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_aclocalDATA \
 	uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS \
 	uninstall-pkgconfigDATA
 
+src/dtddata.o: protocol/wayland.dtd
 @USE_HOST_SCANNER_FALSE@$(BUILT_SOURCES) : wayland-scanner
 
 @ENABLE_LIBRARIES_TRUE@protocol/%-protocol.c : $(top_srcdir)/protocol/%.xml

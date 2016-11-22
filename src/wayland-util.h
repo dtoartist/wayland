@@ -31,14 +31,14 @@
 #ifndef WAYLAND_UTIL_H
 #define WAYLAND_UTIL_H
 
-#ifdef  __cplusplus
-extern "C" {
-#endif
-
 #include <math.h>
 #include <stddef.h>
 #include <inttypes.h>
 #include <stdarg.h>
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
 
 /* GCC visibility */
 #if defined(__GNUC__) && __GNUC__ >= 4
@@ -121,12 +121,23 @@ struct wl_list {
 	struct wl_list *next;
 };
 
-void wl_list_init(struct wl_list *list);
-void wl_list_insert(struct wl_list *list, struct wl_list *elm);
-void wl_list_remove(struct wl_list *elm);
-int wl_list_length(const struct wl_list *list);
-int wl_list_empty(const struct wl_list *list);
-void wl_list_insert_list(struct wl_list *list, struct wl_list *other);
+void
+wl_list_init(struct wl_list *list);
+
+void
+wl_list_insert(struct wl_list *list, struct wl_list *elm);
+
+void
+wl_list_remove(struct wl_list *elm);
+
+int
+wl_list_length(const struct wl_list *list);
+
+int
+wl_list_empty(const struct wl_list *list);
+
+void
+wl_list_insert_list(struct wl_list *list, struct wl_list *other);
 
 /**
  * Retrieves a pointer to the containing struct of a given member item.
@@ -206,10 +217,17 @@ struct wl_array {
 	     (const char *) pos < ((const char *) (array)->data + (array)->size); \
 	     (pos)++)
 
-void wl_array_init(struct wl_array *array);
-void wl_array_release(struct wl_array *array);
-void *wl_array_add(struct wl_array *array, size_t size);
-int wl_array_copy(struct wl_array *array, struct wl_array *source);
+void
+wl_array_init(struct wl_array *array);
+
+void
+wl_array_release(struct wl_array *array);
+
+void *
+wl_array_add(struct wl_array *array, size_t size);
+
+int
+wl_array_copy(struct wl_array *array, struct wl_array *source);
 
 typedef int32_t wl_fixed_t;
 
@@ -239,11 +257,14 @@ wl_fixed_from_double(double d)
 	return u.i;
 }
 
-static inline int wl_fixed_to_int(wl_fixed_t f)
+static inline int
+wl_fixed_to_int(wl_fixed_t f)
 {
 	return f / 256;
 }
-static inline wl_fixed_t wl_fixed_from_int(int i)
+
+static inline wl_fixed_t
+wl_fixed_from_int(int i)
 {
 	return i * 256;
 }
@@ -279,7 +300,7 @@ union wl_argument {
  * A dispatcher takes five arguments:  The first is the dispatcher-specific
  * implementation data associated with the target object.  The second is the
  * object on which the callback is being invoked (either wl_proxy or
- * wl_resource).  The third and fourth arguments are the opcode the wl_messsage
+ * wl_resource).  The third and fourth arguments are the opcode the wl_message
  * structure corresponding to the callback being emitted.  The final argument
  * is an array of arguments received from the other process via the wire
  * protocol.
@@ -289,6 +310,17 @@ typedef int (*wl_dispatcher_func_t)(const void *, void *, uint32_t,
 				    union wl_argument *);
 
 typedef void (*wl_log_func_t)(const char *, va_list) WL_PRINTF(1, 0);
+
+/** \enum wl_iterator_result
+ *
+ * This enum represents the return value of an iterator function.
+ */
+enum wl_iterator_result {
+	/** Stop the iteration */
+	WL_ITERATOR_STOP,
+	/** Continue the iteration */
+	WL_ITERATOR_CONTINUE
+};
 
 #ifdef  __cplusplus
 }
