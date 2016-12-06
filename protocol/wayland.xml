@@ -1182,6 +1182,29 @@
       <arg name="flags" type="uint" enum="transient" summary="transient surface behavior"/>
     </request>
 
+    <request name="set_window_geometry">
+      <description summary="set the new window geometry">
+        The window geometry of a window is its "visible bounds" from the
+        user's perspective. Client-side decorations often have invisible
+        portions like drop-shadows which should be ignored for the
+        purposes of aligning, placing and constraining windows.
+
+        The default value is the full bounds of the surface, including any
+        subsurfaces. Once the window geometry of the surface is set once,
+        it is not possible to unset it, and it will remain the same until
+        set_window_geometry is called again, even if a new subsurface or
+        buffer is attached.
+
+        If responding to a configure event, the window geometry in here
+        must respect the sizing negotiations specified by the states in
+        the configure event.
+      </description>
+      <arg name="x" type="int"/>
+      <arg name="y" type="int"/>
+      <arg name="width" type="int"/>
+      <arg name="height" type="int"/>
+    </request>
+
     <request name="set_maximized">
       <description summary="make the surface a maximized surface">
 	Map the surface as a maximized surface.
